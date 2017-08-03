@@ -20,7 +20,7 @@ Copyright (C) 2017  BakSeeDaa
 
 --]]
 
-local scriptVersion = '0.9.0'
+local scriptVersion = '0.9.1'
 
 package.path = globalvariables['script_path']..'scripts/?.cfg;'..package.path
 --print(package.path)
@@ -64,7 +64,7 @@ return {
 		-- Calls a helper function if it has been defined. Otherwise does nothing really.
 		local function callIfDefined(f)
 			return function(...)
-				local error, result = pcall(domoticz.helpers[f], ...)
+				local error, result = pcall(config.helpers[f], ...)
 				if error then -- f exists and is callable
 					return result
 				end
