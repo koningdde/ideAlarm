@@ -1,61 +1,30 @@
 --[[
-alarm.lua by BakSeeDaa
-Version 2.0.0
+alarm.lua
 
-This script requires dzVents version 2.2.1 or higher.
+Please read: https://github.com/allan-gam/domoticz-dzVents-alarm/wiki
 
-This script allows up to 9 'Alarm Zones' with different settings.
-You Need to create 2 virtual text devices for each zone (Where "n" is the zone number 1-9):
-'Zn Arming Mode' - Will hold the zones arming mode, e.g. "Disarmed", "Armed Home" or "Armed Away"
-'Zn Status' - Will hold the zones event status, e.g. "Normal", "Alert", "Error" or "Tripped"
+Copyright (C) 2017  BakSeeDaa
 
-ALARM SENSOR NAMING
-====================
-To make alarm sensors trigger, their names must be preceeded with the folowing codes. 
-(First 2 characters) = Alarm sensor type. Must be one of the following: 
-		'dl' = door lock, 'wl' = window lock, 'md' = motion detector, 'pb' = panic button
-(3rd character) = Alarm Zone number 1-9
-(4th character) = 'a' or 'b'.
-	if 'a', the sensor will trigger alarm in any arming mode.
-	if 'b' the sensor will trigger alarm only when armed away.
+		This program is free software: you can redistribute it and/or modify
+		it under the terms of the GNU General Public License as published by
+		the Free Software Foundation, either version 3 of the License, or
+		(at your option) any later version.
 
-THE MAIN ALARM ZONE
-=====================
-Only one of the defined Alarm Zones below can be associated with the Domoticz built in Security Panel, it's 
-referred to as the "Main Zone".
+		This program is distributed in the hope that it will be useful,
+		but WITHOUT ANY WARRANTY; without even the implied warranty of
+		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+		GNU General Public License for more details.
 
-CUSTOM FUNCTIONS
-=====================
-You can declare custom helper functions for certain events. The function will be run if it exists.
-Just create the dzVents helper function using the name below:
-
-alarmStatusChange(domoticz, zoneNumber, zoneStatus) Called when an alarm zone's status is changed 
-alarmZoneTripped(domoticz, zoneNumber) Called whenever a zone is tripped. 
-
-AT ALERT
-=====================
-At alert, the alertDevices for the alerting zone gets activated. That can be a siren or any other Domoticz
-device that can be turned on/off 
-
-MISC
-=====================
-Resetting an alarm is done by disarming the zone (or by choosing a different arming mode).
-
-Each Zone can optionally be configured to have a button device to toggle alarm status between Disarmed and Armed home.
-Each Zone can optionally be configured to have a button device to toggle alarm status between Disarmed and Armed away.
-
-THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS`` AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+		You should have received a copy of the GNU General Public License
+		along with this program.  If not, see <http://www.gnu.org/licenses
 
 --]]
 
--- Don't alter anything in this file.
+local scriptVersion = '0.9.0'
 
 package.path = globalvariables['script_path']..'scripts/?.cfg;'..package.path
 --print(package.path)
 local config = require "alarm_config"
-
--- Now, you may wonder why the configuration file isn't done in global_data.cfg. It's because the configuration
--- contains trigger device data that is not available before triggered.
 
 -- Create the data declarations and toggleButtons array
 local data = {}
@@ -75,7 +44,7 @@ return {
 	active = true,
 	logging = {
 		level = domoticz.LOG_INFO, -- Select one of LOG_DEBUG, LOG_INFO, LOG_ERROR, LOG_FORCE to override system log level
-		marker = "alarm"
+		marker = 'alarm '..scriptVersion
 	},
 	on = {
 		devices = triggerDevices
