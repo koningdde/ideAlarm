@@ -10,8 +10,10 @@ local _C = {}
 _C.ALARM_TEST_MODE = false -- if ALARM_TEST_MODE is set to true it will prevent audible alarm
 
 _C.ALARM_ZONES = {
+
+	-- Start configuration of the first alarm zone
 	{
-		name='Pembridge Square',
+		name='Pembridge Square Residence',
 		armingModeTextDevID=550,
 		statusTextDevID=554,
 		entryDelay=15,
@@ -23,6 +25,9 @@ _C.ALARM_ZONES = {
 		armHomeTogglesNeeded=1,
 		mainZone=true
 	},
+	-- End configuration of the first alarm zone
+
+	-- Start configuration of the second alarm zone
 	{
 		name='Garden Shed',
 		armingModeTextDevID=551,
@@ -36,6 +41,8 @@ _C.ALARM_ZONES = {
 		armHomeTogglesNeeded=1,
 		mainZone=false
 	},
+	-- End configuration of the first second alarm zone
+
 }
 
 -- Alarm helper functions
