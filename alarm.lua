@@ -22,7 +22,7 @@ Copyright (C) 2017  BakSeeDaa
 
 local scriptVersion = '0.9.1'
 
-package.path = globalvariables['script_path']..'scripts/?.cfg;'..package.path
+package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 --print(package.path)
 local config = require "alarm_config"
 
