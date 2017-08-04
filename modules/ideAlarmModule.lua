@@ -280,7 +280,6 @@ function ideAlarm.mainZone()
 			return index
 		end
 	end
-	print('ideAlarm.mainZone() : Error: No main zone configured in the configuration file')
 	return(nil)
 end
 
@@ -289,7 +288,6 @@ function ideAlarm.armingModeDevIdx(zone)
 	if zone ~= nil then 
 		return(config.ALARM_ZONES[zone].armingModeTextDevID)
 	else
-		print('ideAlarm.armingModeDevIdx(zone) : Invalid zone argument')
 		return nil
 	end
 end
