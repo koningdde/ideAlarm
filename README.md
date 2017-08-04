@@ -3,8 +3,10 @@ Multiple zones dzVents alarm script for Domoticz
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-## Status: Work in Progress
+## Software status
+Testing
 
+## Documentation
 Wiki with installation instructions: https://github.com/allan-gam/ideAlarm/wiki
 
 domoticz-dzVents-alarm is written in LUA and runs on the [Domoticz](http://www.domoticz.com/wiki/Domoticz_Wiki_Manual) built in [dzVents Lua Framework](http://www.domoticz.com/forum/viewforum.php?f=59).
