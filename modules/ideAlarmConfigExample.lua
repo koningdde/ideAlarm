@@ -1,6 +1,6 @@
 -- Edit this file suit your needs 
 -- Then create the folder /path/to/domoticz/scripts/dzVents/modules and place it there
--- renaming it to alarm_config.lua
+-- renaming it to ideAlarmConfig.lua
 
 -- See https://github.com/allan-gam/ideAlarm/wiki/configuration
 -- After editing, always verify that it's valid LUA at http://codepad.org/ (Mark your paste as "Private"!!!)
