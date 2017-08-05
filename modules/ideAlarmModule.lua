@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.1'
+local scriptVersion = '0.9.2'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -45,6 +45,7 @@ end
 
 function ideAlarm.disArmZone(domoticz, zone)
 	-- Disarms a zone unless it's already disarmed. Disarming a zone also resets it's status
+	zone = zone or ideAlarm.mainZone()
 	if domoticz.devices(config.ALARM_ZONES[zone].armingModeTextDevID).state ~= domoticz.SECURITY_DISARMED then
 		domoticz.helpers.setTextDevice(config.ALARM_ZONES[zone].armingModeTextDevID, domoticz.SECURITY_DISARMED)
 	end
@@ -53,32 +54,33 @@ end
 
 function ideAlarm.armZone(domoticz, zone, armingMode, delay)
 	-- Arms a zone unless it's already disarmed. Arming a zone also resets it's status
-	delay = delay or 0
+	zone = zone or ideAlarm.mainZone()
+	delay = delay or (armingMode == domoticz.SECURITY_ARMEDAWAY and config.ALARM_ZONES[zone].exitDelay or 0)
 	armingMode = armingMode or domoticz.SECURITY_ARMEDAWAY
+
 	if domoticz.devices(config.ALARM_ZONES[zone].armingModeTextDevID).state ~= armingMode then
-		domoticz.log(config.ALARM_ZONES[zone].name..' new arming mode: '..armingMode, domoticz.LOG_INFO)
+		domoticz.log('Arming zone '..config.ALARM_ZONES[zone].name..
+			' to '..armingMode..(delay>0 and ' with a delay of '..delay..' seconds' or ' immediately'), domoticz.LOG_INFO)
 		domoticz.helpers.setTextDevice(config.ALARM_ZONES[zone].armingModeTextDevID, armingMode, delay)
 	end
 	updateZoneStatus(domoticz, zone, ZS_NORMAL)
 end
 
 --Function to toggle the zones arming mode between 'Disarmed' and armType
-function ideAlarm.toggleArmingMode(domoticz, zone, armType)
+function ideAlarm.toggleArmingMode(domoticz, zone, armingMode)
+	zone = zone or ideAlarm.mainZone()
 	if config.ALARM_ZONES[zone].mainZone then
 		-- This zone is connected to the Domoticz Security Panel Device
 	end
 
 	local currentArmingMode = domoticz.devices(config.ALARM_ZONES[zone].armingModeTextDevID).state
 	local newArmingMode
-	newArmingMode = (currentArmingMode ~= domoticz.SECURITY_DISARMED and domoticz.SECURITY_DISARMED or armType)
-	local delay = (newArmingMode == domoticz.SECURITY_ARMEDAWAY and config.ALARM_ZONES[zone].exitDelay or 0)
-	domoticz.log('Toggling arming mode for zone '..config.ALARM_ZONES[zone].name..
-		' from '..currentArmingMode..' to '..newArmingMode..(delay>0 and ' with a delay of '..delay..' seconds' or ' immediately'), domoticz.LOG_INFO)
+	newArmingMode = (currentArmingMode ~= domoticz.SECURITY_DISARMED and domoticz.SECURITY_DISARMED or armingMode)
 
 	if newArmingMode == domoticz.SECURITY_DISARMED then
 		ideAlarm.disArmZone(domoticz, zone)
 	else
-		ideAlarm.armZone(domoticz, zone, newArmingMode, delay)
+		ideAlarm.armZone(domoticz, zone, newArmingMode)
 	end
 
 end
