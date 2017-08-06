@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.2'
+local scriptVersion = '0.9.3'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -270,6 +270,15 @@ end
 
 function ideAlarm.version()
 	return('ideAlarm V'..scriptVersion)
+end
+
+function ideAlarm.statusAll(domoticz)
+	local statusTxt = '\n\nStatus for all '..tostring(#config.ALARM_ZONES)..' alarm zones\n'
+	statusTxt = statusTxt..'============================\n'
+	for i=1, #config.ALARM_ZONES do
+		statusTxt = statusTxt..config.ALARM_ZONES[i]['name']..': '..domoticz.devices(config.ALARM_ZONES[i].armingModeTextDevID).state..', '..domoticz.devices(config.ALARM_ZONES[i].statusTextDevID).state..'\n'
+	end
+	return statusTxt..'\n'
 end
 
 function ideAlarm.qtyAlarmZones()
