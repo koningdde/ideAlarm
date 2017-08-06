@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.3'
+local scriptVersion = '0.9.4'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -40,6 +40,15 @@ local function updateZoneStatus(domoticz, zone, newStatus)
 	if domoticz.devices(config.ALARM_ZONES[zone].statusTextDevID).state ~= newStatus then
 		domoticz.helpers.setTextDevice(config.ALARM_ZONES[zone].statusTextDevID, newStatus) -- This will trigger this script again
 		domoticz.log(config.ALARM_ZONES[zone].name..' new status: '..newStatus, domoticz.LOG_INFO)
+	end
+end
+
+local function callIfDefined(f)
+	return function(...)
+		local error, result = pcall(custom.helpers[f], ...)
+		if error then -- f exists and is callable
+			return result
+		end
 	end
 end
 
@@ -88,14 +97,6 @@ end
 function ideAlarm.execute(domoticz, device)
 
 	-- Calls a helper function if it has been defined. Otherwise does nothing really.
-	local function callIfDefined(f)
-		return function(...)
-			local error, result = pcall(custom.helpers[f], ...)
-			if error then -- f exists and is callable
-				return result
-			end
-		end
-	end
 
 	local function toggleSirens(alertingZones)
 		local tempMessage = ''
@@ -273,12 +274,39 @@ function ideAlarm.version()
 end
 
 function ideAlarm.statusAll(domoticz)
-	local statusTxt = '\n\nStatus for all '..tostring(#config.ALARM_ZONES)..' alarm zones\n'
-	statusTxt = statusTxt..'============================\n'
+	local statusTxt = '\n\nStatus for all '..tostring(#config.ALARM_ZONES)..' alarm zones:\n'
 	for i=1, #config.ALARM_ZONES do
 		statusTxt = statusTxt..config.ALARM_ZONES[i]['name']..': '..domoticz.devices(config.ALARM_ZONES[i].armingModeTextDevID).state..', '..domoticz.devices(config.ALARM_ZONES[i].statusTextDevID).state..'\n'
 	end
 	return statusTxt..'\n'
+end
+
+function ideAlarm.testAlert(domoticz)
+
+	if config.ALARM_TEST_MODE then
+		domoticz.log('Can not test alerts! Please disable ALARM_TEST_MODE in configuration file first.' , domoticz.LOG_ERROR)
+		return false
+	end
+
+	local allAlertDevices = {}
+	for i=1, #config.ALARM_ZONES do
+		local zone = config.ALARM_ZONES[i]
+		for j=1, #zone.alertDevices do
+			allAlertDevices[zone.alertDevices[j]] = 'On'
+		end
+	end
+
+	local tempMessage = ideAlarm.statusAll(domoticz)
+	callIfDefined('alarmAlertMessage')(domoticz, tempMessage, config.ALARM_TEST_MODE)
+	domoticz.log(tempMessage, domoticz.LOG_FORCE)
+
+	for key,value in pairs(allAlertDevices) do
+		domoticz.log(key, domoticz.LOG_FORCE)
+		domoticz.devices(key).switchOn()
+		domoticz.devices(key).switchOff().afterSec(5)
+	end
+
+	return true
 end
 
 function ideAlarm.qtyAlarmZones()
