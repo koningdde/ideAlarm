@@ -13,12 +13,14 @@ _C.ALARM_ZONES = {
 
 	-- Start configuration of the first alarm zone
 	{
-		name='Pembridge Square Residence',
+		name='My Home',
 		armingModeTextDevID=550,
 		statusTextDevID=554,
 		entryDelay=15,
 		exitDelay=20,
-		alertDevices={'Notting Hill Alert Horn', 'Big Ben Chimes'},
+		alertDevices={'Siren', 'Garden Lights'},
+		classASensors={'dl1a*'},
+		classBSensors={'dl1b*', 'md1b*'},
 		armAwayToggleBtn='Toggle Z1 Arm Away',
 		armAwayTogglesNeeded=1,
 		armHomeToggleBtn='Toggle Z1 Arm Home',
@@ -29,12 +31,14 @@ _C.ALARM_ZONES = {
 
 	-- Start configuration of the second alarm zone
 	{
-		name='Garden Shed',
+		name='Pembridge Square Residence',
 		armingModeTextDevID=551,
 		statusTextDevID=555,
 		entryDelay=0,
 		exitDelay=0,
-		alertDevices={'Garden Shed Siren', 'Garden Lights'},
+		alertDevices={'Notting Hill Alert Horn', 'Big Ben Chimes'},
+		classASensors={'dl2*', 'Another Switch'},
+		classBSensors={},
 		armAwayToggleBtn='Toggle Z2 Arm Away',
 		armAwayTogglesNeeded=1,
 		armHomeToggleBtn='Toggle Z2 Arm Home',
