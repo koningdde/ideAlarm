@@ -9,8 +9,8 @@ Edit this file suit your needs
 
 local _C = {}
 
-local SENSOR_CLASS_A = 'a' -- Sensor active in both arming modes. E.g. "Armed Home" and "Armed Away".
-local SENSOR_CLASS_B = 'b' -- Sensor active in arming mode "Armed Away" only.
+local SENSOR_CLASS_A = 'a' -- Sensor can be triggered in both arming modes. E.g. "Armed Home" and "Armed Away".
+local SENSOR_CLASS_B = 'b' -- Sensor can be triggered in arming mode "Armed Away" only.
 
 --[[
 -------------------------------------------------------------------------------
