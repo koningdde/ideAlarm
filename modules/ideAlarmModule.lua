@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.20'
+local scriptVersion = '0.9.21'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -282,30 +282,64 @@ local function onSensorChange(domoticz, device)
 	end
 end
 
-function ideAlarm.execute(domoticz, device)
+local function onSecurityChange(domoticz, triggerInfo)
+	-- Domoticz built in Security state has changed, shall we sync the new arming mode to any zone?
+
+	for i, alarmZone in ipairs(config.ALARM_ZONES) do
+	
+		if alarmZone.syncDomoSecToThisZone then
+		
+			if alarmZone.syncThisZoneToDomoSec then
+				domoticz.log('Configuration error in zone '..alarmZone.name
+					..'. Both syncDomoSecToThisZone and syncThisZoneToDomoSec should not used at the same time!', domoticz.LOG_ERROR)
+				return
+			end
+
+			local newArmingMode = triggerInfo.trigger
+			if alarmZone.armingMode ~= newArmingMode then
+				domoticz.log('The Domoticz built in Security\'s arming mode changed to '..newArmingMode, domoticz.LOG_INFO)
+				domoticz.log('Syncing the new arming mode to zone '..alarmZone.name, domoticz.LOG_INFO)
+				if newArmingMode == domoticz.SECURITY_DISARMED then
+					ideAlarm.disArmZone(domoticz, zone)
+				else
+					ideAlarm.armZone(domoticz, zone, newArmingMode)
+				end
+			end
+
+		end
+
+	end
+end
+
+function ideAlarm.execute(domoticz, device, triggerInfo)
 
 	local triggerType
 
 	-- What caused this script to trigger?
-	for _, alarmZone in ipairs(config.ALARM_ZONES) do
-		if device.deviceSubType == 'Text' then
-			if device.id == alarmZone.statusTextDevID then
-				triggerType = 'status' -- Alarm Zone Status change
-				break
-			elseif device.id == alarmZone.armingModeTextDevID then
-				triggerType = 'armingMode' -- Alarm Zone Arming Mode change
-				break
+	if triggerInfo.type == domoticz.EVENT_TYPE_DEVICE then
+		for _, alarmZone in ipairs(config.ALARM_ZONES) do
+			if device.deviceSubType == 'Text' then
+				if device.id == alarmZone.statusTextDevID then
+					triggerType = 'status' -- Alarm Zone Status change
+					break
+				elseif device.id == alarmZone.armingModeTextDevID then
+					triggerType = 'armingMode' -- Alarm Zone Arming Mode change
+					break
+				end
+			elseif device.state == 'Open' or device.state == 'On' then
+				if device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn then
+					triggerType = 'toggleSwitch'
+					break
+				end
+			else
+				do return end  -- We are not interested in 'Closed' or 'Off' states
 			end
-		elseif device.state == 'Open' or device.state == 'On' then
-			if device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn then
-				triggerType = 'toggleSwitch'
-				break
-			end
-		else
-			do return end  -- We are not interested in 'Closed' or 'Off' states
 		end
+		triggerType = triggerType or 'sensor'
+	elseif triggerInfo.type == domoticz.EVENT_TYPE_SECURITY then
+		triggerType = triggerType or 'security'
 	end
-	triggerType = triggerType or 'sensor'
+		
 	domoticz.log('triggerType '.. triggerType, domoticz.LOG_INFO)
 
 	-- Retrieve and save current alarm zones arming mode and status in the config.ALARM_ZONES table
@@ -326,6 +360,8 @@ function ideAlarm.execute(domoticz, device)
 	elseif triggerType == 'sensor' then
 		onSensorChange(domoticz, device)
 		do return end
+	elseif triggerType == 'security' then
+		onSecurityChange(domoticz, triggerInfo)
 	end
 
 end
@@ -447,6 +483,8 @@ function ideAlarm.triggerDevices()
   		table.insert(tDevs, sensorName)
 		end
 	end
+	-- Add Domoticz built in Security Device
+	--table.insert(tDevs, alarmZone.armAwayToggleBtn)
 	return(tDevs)
 end
 
