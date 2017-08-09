@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.10'
+local scriptVersion = '0.9.20'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -239,9 +239,9 @@ local function onArmingModeChange(domoticz, device)
 			local armingMode = alarmZone.armingMode
 			callIfDefined('alarmArmingModeChanged')(domoticz, i, armingMode, alarmZone.mainZone)
 
-			if alarmZone.mainZone then
+			if alarmZone.syncThisZoneToDomoSec then
 				if armingMode ~= domoticz.security then
-					domoticz.log('Syncing Domoticz built in Security Panel with the main zones arming status', domoticz.LOG_INFO)
+					domoticz.log('Syncing Domoticz built in Security Panel with the zone '..alarmZone.name..'\'s arming status', domoticz.LOG_INFO)
 					if armingMode == domoticz.SECURITY_DISARMED then
 						domoticz.devices('Security Panel').disarm()
 					elseif armingMode == domoticz.SECURITY_ARMEDHOME then
@@ -339,6 +339,8 @@ function ideAlarm.statusAll(domoticz)
 	for i, alarmZone in ipairs(config.ALARM_ZONES) do
 		statusTxt = statusTxt..'Zone #'..tostring(i)..': '..alarmZone.name
 			..((alarmZone.mainZone) and ' (Main Zone) ' or '')
+			..((alarmZone.syncThisZoneToDomoSec) and ' (Sync to Domo Sec) ' or '')
+			..((alarmZone.syncDomoSecToThisZone) and ' (Sync Domo Sec to zone) ' or '')
 			..', '..domoticz.devices(alarmZone.armingModeTextDevID).state
 			..', '..domoticz.devices(alarmZone.statusTextDevID).state..'\n===========================================\n'
 		-- List all sensors for this zone
