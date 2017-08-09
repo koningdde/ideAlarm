@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.21'
+local scriptVersion = '0.9.22'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -483,8 +483,6 @@ function ideAlarm.triggerDevices()
   		table.insert(tDevs, sensorName)
 		end
 	end
-	-- Add Domoticz built in Security Device
-	--table.insert(tDevs, alarmZone.armAwayToggleBtn)
 	return(tDevs)
 end
 
