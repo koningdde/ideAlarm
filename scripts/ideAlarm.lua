@@ -25,9 +25,10 @@ return {
 	},
 	data = persistentVariables,
 	execute = function(domoticz, device, triggerInfo)
-
-		domoticz.log('Triggered by '..((device) and 'device: '..device.name..', device state is: '..device.state or 'Domoticz Security'), domoticz.LOG_DEBUG)
-		alarm.execute(domoticz, device, triggerInfo)
+		if not (device and (device.state == 'Closed' or device.state == 'Off')) then
+			domoticz.log('Triggered by '..((device) and 'device: '..device.name..', device state is: '..device.state or 'Domoticz Security'), domoticz.LOG_DEBUG)
+			alarm.execute(domoticz, device, triggerInfo)
+		end  
 
 	end
 }
