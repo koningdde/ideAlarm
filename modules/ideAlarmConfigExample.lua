@@ -44,7 +44,7 @@ _C.ALARM_ZONES = {
 
 		},
 		armAwayToggleBtn='Toggle Z1 Arm Away',
-		armAwayTogglesNeeded = 3,
+		armAwayTogglesNeeded = 1,
 		armHomeToggleBtn='Toggle Z1 Arm Home',
 		armHomeTogglesNeeded = 1,
 		mainZone = true,
