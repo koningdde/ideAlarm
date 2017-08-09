@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.6'
+local scriptVersion = '0.9.10'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -37,10 +37,33 @@ local ZS_TIMED_OUT = 'Timed out'
 local SENSOR_CLASS_A = 'a' -- Sensor active in both arming modes. E.g. "Armed Home" and "Armed Away".
 local SENSOR_CLASS_B = 'b' -- Sensor active in arming mode "Armed Away" only.
 
+-- BELOW ARE 3 TEMPORARY FUNCTIONS THAT WILL BE OBSOLETE WHEN DZVENTS 2.3.0 IS RELEASED 
+local function jsonAPI(apiCall, delay)
+	local domoticzHost = '127.0.0.1'
+	local domoticzPort = '8080'
+	delay = delay or 0
+	local url = 'http://'..domoticzHost..':'..domoticzPort..'/json.htm?'
+	os.execute('(sleep '..delay..';curl -s "'..url..apiCall..'" > /dev/null)&')
+end
+local function urlEncode(str)
+	if (str) then
+		str = string.gsub (str, '\n', '\r\n')
+		str = string.gsub (str, '([^%w ])',
+		function (c) return string.format ('%%%02X', string.byte(c)) end)
+		str = string.gsub (str, ' ', '+')
+	end
+	return str
+end
+local function setTextDevice(idx, sValue, delay)
+	delay = delay or 0
+	jsonAPI('type=command&param=udevice&idx='..idx.."&nvalue=0&svalue="..urlEncode(sValue), delay)
+end
+-- END TEMPORARY FUNCTIONS
+
 local function updateZoneStatus(domoticz, zone, newStatus)
 		newStatus = newStatus or ZS_NORMAL
 	if domoticz.devices(config.ALARM_ZONES[zone].statusTextDevID).state ~= newStatus then
-		domoticz.helpers.setTextDevice(config.ALARM_ZONES[zone].statusTextDevID, newStatus) -- This will trigger this script again
+		setTextDevice(config.ALARM_ZONES[zone].statusTextDevID, newStatus) -- This will trigger this script again
 		domoticz.log(config.ALARM_ZONES[zone].name..' new status: '..newStatus, domoticz.LOG_INFO)
 	end
 end
@@ -58,7 +81,7 @@ function ideAlarm.disArmZone(domoticz, zone)
 	-- Disarms a zone unless it's already disarmed. Disarming a zone also resets it's status
 	zone = zone or ideAlarm.mainZone()
 	if domoticz.devices(config.ALARM_ZONES[zone].armingModeTextDevID).state ~= domoticz.SECURITY_DISARMED then
-		domoticz.helpers.setTextDevice(config.ALARM_ZONES[zone].armingModeTextDevID, domoticz.SECURITY_DISARMED)
+		setTextDevice(config.ALARM_ZONES[zone].armingModeTextDevID, domoticz.SECURITY_DISARMED)
 	end
 	updateZoneStatus(domoticz, zone, ZS_NORMAL)
 end
@@ -72,7 +95,7 @@ function ideAlarm.armZone(domoticz, zone, armingMode, delay)
 	if domoticz.devices(config.ALARM_ZONES[zone].armingModeTextDevID).state ~= armingMode then
 		domoticz.log('Arming zone '..config.ALARM_ZONES[zone].name..
 			' to '..armingMode..(delay>0 and ' with a delay of '..delay..' seconds' or ' immediately'), domoticz.LOG_INFO)
-		domoticz.helpers.setTextDevice(config.ALARM_ZONES[zone].armingModeTextDevID, armingMode, delay)
+		setTextDevice(config.ALARM_ZONES[zone].armingModeTextDevID, armingMode, delay)
 	end
 	updateZoneStatus(domoticz, zone, ZS_NORMAL)
 end
@@ -191,7 +214,7 @@ local function onStatusChange(domoticz, device)
 			elseif alarmZone.status == ZS_TIMED_OUT then
 				if alarmZone.armingMode ~= domoticz.SECURITY_DISARMED then
 					-- A sensor was tripped, delay time has passed and the zone is still armed so ...
-					domoticz.helpers.setTextDevice(alarmZone.statusTextDevID, ZS_ALERT)
+					setTextDevice(alarmZone.statusTextDevID, ZS_ALERT)
 					callIfDefined('alarmZoneAlert')(domoticz, i)
 				else
 					domoticz.log('No need for any noise, the zone is obviously disarmed now.', domoticz.LOG_INFO)
@@ -248,9 +271,9 @@ local function onSensorChange(domoticz, device)
 					local alarmStatus = domoticz.devices(alarmZone.statusTextDevID).state
 					if  alarmStatus ~= ZS_TRIPPED and alarmStatus ~= ZS_TIMED_OUT and alarmStatus ~= ZS_ALERT then
 						if (alarmZone.entryDelay > 0) then
-							domoticz.helpers.setTextDevice(alarmZone.statusTextDevID, ZS_TRIPPED)
+							setTextDevice(alarmZone.statusTextDevID, ZS_TRIPPED)
 						end
-						domoticz.helpers.setTextDevice(alarmZone.statusTextDevID, ZS_TIMED_OUT, alarmZone.entryDelay) -- Timer delayed command
+						setTextDevice(alarmZone.statusTextDevID, ZS_TIMED_OUT, alarmZone.entryDelay) -- Timer delayed command
 					end
 	  		end
 	  		break -- Let this sensor trigger only once in this zone
@@ -312,12 +335,23 @@ function ideAlarm.version()
 end
 
 function ideAlarm.statusAll(domoticz)
-	local statusTxt = '\n\n'
-	for _, alarmZone in ipairs(config.ALARM_ZONES) do
-		statusTxt = statusTxt..alarmZone.name..': '..domoticz.devices(alarmZone.armingModeTextDevID).state
-			..', '..domoticz.devices(alarmZone.statusTextDevID).state..'\n'
+	local statusTxt = '\n\n'..ideAlarm.version()..'\nListing alarm zones and sensors:\n\n'
+	for i, alarmZone in ipairs(config.ALARM_ZONES) do
+		statusTxt = statusTxt..'Zone #'..tostring(i)..': '..alarmZone.name
+			..((alarmZone.mainZone) and ' (Main Zone) ' or '')
+			..', '..domoticz.devices(alarmZone.armingModeTextDevID).state
+			..', '..domoticz.devices(alarmZone.statusTextDevID).state..'\n===========================================\n'
+		-- List all sensors for this zone
+		for sensorName, sensorConfig in pairs(alarmZone.sensors) do
+			local sensor = domoticz.devices(sensorName) 
+			local isActive = (type(sensorConfig.active) == 'function') and sensorConfig.active(domoticz) or sensorConfig.active 
+			statusTxt = statusTxt..sensor.name
+				..(isActive and ': Active,' or ': Not active,')
+				..((sensor.state == 'On' or sensor.state == 'Open') and ' Tripped' or ' Not tripped')..'\n'
+		end
+		statusTxt = statusTxt..'\n'
 	end
-	return statusTxt..'\n'
+	return statusTxt
 end
 
 function ideAlarm.armingMode(domoticz, zone)
