@@ -47,7 +47,9 @@ _C.ALARM_ZONES = {
 		armAwayTogglesNeeded = 3,
 		armHomeToggleBtn='Toggle Z1 Arm Home',
 		armHomeTogglesNeeded = 1,
-		mainZone = true
+		mainZone = true,
+		syncDomoSecToThisZone = false,
+		syncThisZoneToDomoSec = true,
 	},
 	-- End configuration of the first alarm zone
 
@@ -67,7 +69,9 @@ _C.ALARM_ZONES = {
 		armAwayTogglesNeeded = 1,
 		armHomeToggleBtn = '',
 		armHomeTogglesNeeded = 1,
-		mainZone = false
+		mainZone = false,
+		syncDomoSecToThisZone = false,
+		syncThisZoneToDomoSec = false,
 	},
 	-- End configuration of the second alarm zone
 }
