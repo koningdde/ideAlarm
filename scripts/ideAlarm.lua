@@ -20,13 +20,14 @@ return {
 		marker = alarm.version()
 	},
 	on = {
-		devices = triggerDevices
+		devices = triggerDevices,
+		security = {domoticz.SECURITY_ARMEDAWAY, domoticz.SECURITY_ARMEDHOME, domoticz.SECURITY_DISARMED}
 	},
 	data = persistentVariables,
-	execute = function(domoticz, device)
+	execute = function(domoticz, device, triggerInfo)
 
-		domoticz.log('Triggered by device: '..device.name..', device state is: '..device.state, domoticz.LOG_DEBUG)
-		alarm.execute(domoticz, device)
+		domoticz.log('Triggered by '..((device) and 'device: '..device.name..', device state is: '..device.state or 'Domoticz Security'), domoticz.LOG_DEBUG)
+		alarm.execute(domoticz, device, triggerInfo)
 
 	end
 }
