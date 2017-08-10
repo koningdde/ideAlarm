@@ -32,16 +32,6 @@ _C.ALARM_ZONES = {
 		sensors = {
 			['Entrance Door'] = {['class'] = SENSOR_CLASS_A, ['active'] = true},
 			['Another Door'] = {['class'] = SENSOR_CLASS_A, ['active'] = true},
-
-			-- active can be a boolean or a function as in the example below
-			-- The sensor below will only trigger the alarm if
-			-- "Master" is not at home and it's dark
-			['Garden Shed Door'] = {['class'] = SENSOR_CLASS_A, ['active'] =
-				function(domoticz)
-					return (domoticz.devices('Master Present').state ~= 'On'
-						and domoticz.time.isNightTime)	
-				end},
-
 		},
 		armAwayToggleBtn='Toggle Z1 Arm Away',
 		armAwayTogglesNeeded = 1,
@@ -52,28 +42,6 @@ _C.ALARM_ZONES = {
 		syncThisZoneToDomoSec = true,
 	},
 	-- End configuration of the first alarm zone
-
-	-- Start configuration of the second alarm zone
-	{
-		name = 'Pembridge Square Residence',
-		armingModeTextDevID = 551,
-		statusTextDevID = 555,
-		entryDelay = 15,
-		exitDelay = 15,
-		alertDevices={'Notting Hill Alert Horn', 'Big Ben Chimes'},
-		sensors = {
-			['Big Gate'] = {['class'] = SENSOR_CLASS_A, ['active'] = true},
-			['Patio Door'] = {['class'] = SENSOR_CLASS_B, ['active'] = true},
-		},
-		armAwayToggleBtn = '',
-		armAwayTogglesNeeded = 1,
-		armHomeToggleBtn = '',
-		armHomeTogglesNeeded = 1,
-		mainZone = false,
-		syncDomoSecToThisZone = false,
-		syncThisZoneToDomoSec = false,
-	},
-	-- End configuration of the second alarm zone
 }
 
 return _C
