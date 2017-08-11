@@ -7,35 +7,54 @@
 
 local _C = {}
 
--- Alarm helper functions
+-- ideAlarm Custom helper functions. These functions will be called if they exist.
 _C.helpers = {
 
-	alarmStatusChange = function(domoticz, zone, zoneStatus)
-		if zone == 1 then
-			-- do something 
+	alarmZoneNormal = function(domoticz, alarmZone)
+		-- Normal is good isn't it? We don't have to do anything here.. We could but..
+	end,
+
+	alarmZoneTripped = function(domoticz, alarmZone, activeSensors)
+		-- A sensor has been tripped but there is still no alert
+		-- We should inform whoever tripped the sensor so he/she can disarm the alarm
+		-- before a timeout occors and we get an alert
+		-- In this example we turn on the kitcken lights if the zones name
+		-- is 'My Home' but we could also let Domoticz speak a message or someting.
+		if alarmZone.name == 'My Home' then
+			-- Let's do something here
+			domoticz.devices('Kitchen Lights').switchOn()
 		end
 	end,
 
-	alarmZoneTripped = function(domoticz, zone)
-		if zone == 1 then
-			-- do something 
+	alarmZoneError = function(domoticz, alarmZone, activeSensors)
+		-- An error occurred for an alarm zone. Maybe a door was open when we tried to
+		-- arm the zone. Anyway we should do something about it.
+		domoticz.notify('Alarm Zone Error!',
+			'There was an error for the alarm zone ' .. alarmZone.name,
+			domoticz.PRIORITY_HIGH)
+	end,
+
+	alarmZoneAlert = function(domoticz, alarmZone, activeSensors, testMode)
+		-- It's ALERT TIME!
+		local msg = 'Intrusion in zone '..alarmZone.name..'. '
+		for _, sensor in ipairs(activeSensors) do
+			msg = msg..sensor.name..' tripped @ '..sensor.lastUpdate.raw..'. '
 		end
-	end,
-
-	alarmZoneAlert = function(domoticz, zone)
-		-- do something 
-	end,
-
-	alarmArmingModeChanged = function(domoticz, zone, armingMode, isMainZone)
-		if isMainZone then
-			-- do something 
-		end
-	end,
-
-	alarmAlertMessage= function(domoticz, message, testMode)
+		-- We don't have to turn on/off the alert devices. That's handled by the main script.
 		if not testMode then
-			-- do something
+			domoticz.notify('Alarm Zone Alert!',
+				msg, domoticz.PRIORITY_HIGH)
+		else
+			domoticz.log('(TESTMODE IS ACTIVE) '..msg, domoticz.LOG_INFO)
 		end
+	end,
+
+	alarmArmingModeChanged = function(domoticz, alarmZone)
+		-- The arming mode for a zone has changed. We might want to be informed about that.
+		local zoneName = alarmZone.name
+		domoticz.notify('Arming mode change',
+			'There new arming mode for ' .. alarmZone.name .. ' is ' .. alarmZone.armingMode,
+			domoticz.PRIORITY_LOW)
 	end,
 
 }
