@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.22'
+local scriptVersion = '0.9.30'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -119,8 +119,23 @@ function ideAlarm.toggleArmingMode(domoticz, zone, armingMode)
 
 end
 
+local function getActiveSensors(domoticz, zoneNumber)
+	local alarmZone = config.ALARM_ZONES[zoneNumber]
+	local activeSensors = {}
+	-- Get a list of all tripped and active sensors for this alerting zone
+	for sensorName, sensorConfig in pairs(alarmZone.sensors) do
+		local sensor = domoticz.devices(sensorName) 
+		if (sensor.lastUpdate.minutesAgo < 1) then
+			local isActive = (type(sensorConfig.active) == 'function') and sensorConfig.active(domoticz) or sensorConfig.active 
+			if isActive then
+				table.insert(activeSensors, sensor)
+			end
+		end
+	end
+	return activeSensors
+end
+
 local function toggleSirens(domoticz, device, alertingZones)
-	local tempMessage = ''
 	local allAlertDevices = {}
 	for _, alarmZone in ipairs(config.ALARM_ZONES) do
 		for _, alertDevice in ipairs(alarmZone.alertDevices) do
@@ -134,23 +149,6 @@ local function toggleSirens(domoticz, device, alertingZones)
 		for _, alertDevice in ipairs(alarmZone.alertDevices) do
 			if not config.ALARM_TEST_MODE then allAlertDevices[alertDevice] = 'On' end
 		end
-
-			-- Get a list of all tripped and active sensors for this alerting zone
-		tempMessage = tempMessage .. 'Alarm in ' .. alarmZone.name .. '. '
-		for sensorName, sensorConfig in pairs(alarmZone.sensors) do
-			local sensor = domoticz.devices(sensorName) 
-			if (sensor.state == 'On' or sensor.state == 'Open') and (sensor.lastUpdate.minutesAgo < 2) then
-				local isActive = (type(sensorConfig.active) == 'function') and sensorConfig.active(domoticz) or sensorConfig.active 
-				if isActive then
-					tempMessage = tempMessage..sensor.name..' tripped @ '..sensor.lastUpdate.raw..'. '
-				end
-			end
-		end
-	end
-
-	if tempMessage ~= '' then
-		callIfDefined('alarmAlertMessage')(domoticz, tempMessage, config.ALARM_TEST_MODE)
-		domoticz.log(tempMessage, domoticz.LOG_FORCE)
 	end
 
 	for alertDevice, newState in pairs(allAlertDevices) do
@@ -180,6 +178,7 @@ local function onToggleButton(domoticz, device)
 			if armToggleCount >= qtyNeeded then
 				domoticz.log(armType.. ' toggle button for Alarm Zone '..alarmZone.name..' was pressed '
 					..armToggleCount..' time(s)!', domoticz.LOG_INFO)
+				-- TODO: Check if any sensors are active before allowing an arming mode change
 				ideAlarm.toggleArmingMode(domoticz, i, armType) -- need to prefix function call with module
 				armToggleCount = 0
 			end
@@ -200,22 +199,20 @@ local function onStatusChange(domoticz, device)
 		if device.id == alarmZone.statusTextDevID then
 			domoticz.log('Deal with alarm status changes '.. 'for zone '..alarmZone.name, domoticz.LOG_DEBUG)
 
-			-- Call to optional custom helper function handling alarm status changes for the zone 
-			callIfDefined('alarmStatusChange')(domoticz, i, alarmZone.status)
-
 			if alarmZone.status == ZS_NORMAL then
-				-- Nothing more to do here
+				callIfDefined('alarmZoneNormal')(domoticz, alarmZone)
 			elseif alarmZone.status == ZS_ALERT then
+				callIfDefined('alarmZoneAlert')(domoticz, alarmZone, getActiveSensors(domoticz, i), config.ALARM_TEST_MODE)
 				table.insert(alertingZones, i)
 			elseif alarmZone.status == ZS_ERROR then
 				domoticz.log('An error has occurred for alarm zone  '..alarmZone.name, domoticz.LOG_ERROR)
+				callIfDefined('alarmZoneError')(domoticz, alarmZone, getActiveSensors(domoticz, i), config.ALARM_TEST_MODE)
 			elseif alarmZone.status == ZS_TRIPPED then
-				callIfDefined('alarmZoneTripped')(domoticz, i)
+				callIfDefined('alarmZoneTripped')(domoticz, alarmZone, getActiveSensors(domoticz, i))
 			elseif alarmZone.status == ZS_TIMED_OUT then
 				if alarmZone.armingMode ~= domoticz.SECURITY_DISARMED then
 					-- A sensor was tripped, delay time has passed and the zone is still armed so ...
 					setTextDevice(alarmZone.statusTextDevID, ZS_ALERT)
-					callIfDefined('alarmZoneAlert')(domoticz, i)
 				else
 					domoticz.log('No need for any noise, the zone is obviously disarmed now.', domoticz.LOG_INFO)
 					updateZoneStatus(domoticz, i, ZS_NORMAL)
@@ -236,9 +233,9 @@ local function onArmingModeChange(domoticz, device)
 		-- Deal with arming mode changes for the main zone
 		-- E.g. the text device text for arming mode has changed
 		if (device.id == alarmZone.armingModeTextDevID) then
-			local armingMode = alarmZone.armingMode
-			callIfDefined('alarmArmingModeChanged')(domoticz, i, armingMode, alarmZone.mainZone)
+			callIfDefined('alarmArmingModeChanged')(domoticz, alarmZone)
 
+			local armingMode = alarmZone.armingMode
 			if alarmZone.syncThisZoneToDomoSec then
 				if armingMode ~= domoticz.security then
 					domoticz.log('Syncing Domoticz built in Security Panel with the zone '..alarmZone.name..'\'s arming status', domoticz.LOG_INFO)
@@ -337,9 +334,9 @@ function ideAlarm.execute(domoticz, device, triggerInfo)
 		end
 		triggerType = triggerType or 'sensor'
 	elseif triggerInfo.type == domoticz.EVENT_TYPE_SECURITY then
-		triggerType = triggerType or 'security'
+		triggerType = 'security'
 	end
-		
+
 	domoticz.log('triggerType '.. triggerType, domoticz.LOG_INFO)
 
 	-- Retrieve and save current alarm zones arming mode and status in the config.ALARM_ZONES table
