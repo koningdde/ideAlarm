@@ -43,9 +43,7 @@ _C.ALARM_ZONES = {
 
 		},
 		armAwayToggleBtn='Toggle Z1 Arm Away',
-		armAwayTogglesNeeded = 1,
 		armHomeToggleBtn='Toggle Z1 Arm Home',
-		armHomeTogglesNeeded = 1,
 		mainZone = true,
 		syncWithDomoSec = true, -- Only a sigle zone is allowed to sync with Domoticz's built in Security Panel
 	},
@@ -63,10 +61,8 @@ _C.ALARM_ZONES = {
 			['Big Gate'] = {['class'] = SENSOR_CLASS_A, ['active'] = true},
 			['Patio Door'] = {['class'] = SENSOR_CLASS_B, ['active'] = true},
 		},
-		armAwayToggleBtn = '',
-		armAwayTogglesNeeded = 1,
-		armHomeToggleBtn = '',
-		armHomeTogglesNeeded = 1,
+		armAwayToggleBtn = 'Toggle Z2 Arm Away',
+		armHomeToggleBtn = 'Toggle Z2 Arm Home',
 		mainZone = false,
 		syncWithDomoSec = false, -- Only a sigle zone is allowed to sync with Domoticz's built in Security Panel
 	},
