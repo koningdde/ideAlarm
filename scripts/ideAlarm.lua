@@ -10,7 +10,6 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 --print(package.path)
 local alarm = require "ideAlarmModule"
 
-local persistentVariables = alarm.persistentVariables()
 local triggerDevices = alarm.triggerDevices()
 
 return {
@@ -23,7 +22,6 @@ return {
 		devices = triggerDevices,
 		security = {domoticz.SECURITY_ARMEDAWAY, domoticz.SECURITY_ARMEDHOME, domoticz.SECURITY_DISARMED}
 	},
-	data = persistentVariables,
 	execute = function(domoticz, device, triggerInfo)
 		if not (device and (device.state == 'Closed' or device.state == 'Off')) then
 			domoticz.log('Triggered by '..((device) and 'device: '..device.name..', device state is: '..device.state or 'Domoticz Security'), domoticz.LOG_DEBUG)
