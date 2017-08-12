@@ -34,9 +34,7 @@ _C.ALARM_ZONES = {
 			['Another Door'] = {['class'] = SENSOR_CLASS_A, ['active'] = true},
 		},
 		armAwayToggleBtn='Toggle Z1 Arm Away',
-		armAwayTogglesNeeded = 1,
 		armHomeToggleBtn='Toggle Z1 Arm Home',
-		armHomeTogglesNeeded = 1,
 		mainZone = true,
 		syncWithDomoSec = true, -- Only a sigle zone is allowed to sync with Domoticz's built in Security Panel
 	},
