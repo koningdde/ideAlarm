@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.30'
+local scriptVersion = '0.9.40'
 local ideAlarm = {}
 
 -- Possible Zone states
@@ -104,7 +104,7 @@ end
 function ideAlarm.toggleArmingMode(domoticz, zone, armingMode)
 	zone = zone or ideAlarm.mainZone()
 	if config.ALARM_ZONES[zone].mainZone then
-		-- This zone is connected to the Domoticz Security Panel Device
+		-- This zone is connected to the Domoticz's Security Panel Device
 	end
 
 	local currentArmingMode = domoticz.devices(config.ALARM_ZONES[zone].armingModeTextDevID).state
@@ -163,26 +163,15 @@ local function onToggleButton(domoticz, device)
 	-- Checking if the toggle buttons have been pressed specified number of times within one minute
 	for i, alarmZone in ipairs(config.ALARM_ZONES) do
 		if device.state == 'On' and (device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn) then
-			local armToggleData, qtyNeeded, armType
+			local armType
 			if device.name == alarmZone.armAwayToggleBtn then
-				armToggleData = domoticz.data['armAwayToggleBtn'..i]
-				qtyNeeded = alarmZone.armAwayTogglesNeeded
 				armType = domoticz.SECURITY_ARMEDAWAY
 			else
-				armToggleData = domoticz.data['armHomeToggleBtn'..i]
-				qtyNeeded = alarmZone.armHomeTogglesNeeded
 				armType = domoticz.SECURITY_ARMEDHOME
 			end
-			if (armToggleData.size == 0) then armToggleData.add(0) end
-			local armToggleCount = armToggleData.getLatest().data + 1
-			if armToggleCount >= qtyNeeded then
-				domoticz.log(armType.. ' toggle button for Alarm Zone '..alarmZone.name..' was pressed '
-					..armToggleCount..' time(s)!', domoticz.LOG_INFO)
-				-- TODO: Check if any sensors are active before allowing an arming mode change
-				ideAlarm.toggleArmingMode(domoticz, i, armType) -- need to prefix function call with module
-				armToggleCount = 0
-			end
-			armToggleData.add(armToggleCount)
+			domoticz.log(armType.. ' Alarm mode toggle button for zone "'..alarmZone.name..'" was pushed.', domoticz.LOG_INFO)
+			-- TODO: Check if any sensors are active before allowing an arming mode change
+			ideAlarm.toggleArmingMode(domoticz, i, armType) -- need to prefix function call with module
 		end
 	end
 end
@@ -228,17 +217,23 @@ end
 local function onArmingModeChange(domoticz, device)
 	-- Loop through the Zones
 	-- Check if any alarm zones arming mode changed
-	
+	local zonesToSyncCheck = 0
+
 	for i, alarmZone in ipairs(config.ALARM_ZONES) do
-		-- Deal with arming mode changes for the main zone
+		-- Deal with arming mode changes
 		-- E.g. the text device text for arming mode has changed
 		if (device.id == alarmZone.armingModeTextDevID) then
 			callIfDefined('alarmArmingModeChanged')(domoticz, alarmZone)
 
 			local armingMode = alarmZone.armingMode
-			if alarmZone.syncThisZoneToDomoSec then
+			if alarmZone.syncWithDomoSec then
+				zonesToSyncCheck = zonesToSyncCheck + 1
+				if zonesToSyncCheck > 1 then
+					domoticz.log('Configuration file error. Only a single zone can be set up to synchronize with the Domoticz\'s security panel.', domoticz.LOG_ERROR)
+					return
+				end
 				if armingMode ~= domoticz.security then
-					domoticz.log('Syncing Domoticz built in Security Panel with the zone '..alarmZone.name..'\'s arming status', domoticz.LOG_INFO)
+					domoticz.log('Syncing Domoticz\'s built in Security Panel with the zone '..alarmZone.name..'\'s arming status', domoticz.LOG_INFO)
 					if armingMode == domoticz.SECURITY_DISARMED then
 						domoticz.devices('Security Panel').disarm()
 					elseif armingMode == domoticz.SECURITY_ARMEDHOME then
@@ -282,16 +277,15 @@ end
 local function onSecurityChange(domoticz, triggerInfo)
 	-- Domoticz built in Security state has changed, shall we sync the new arming mode to any zone?
 
+	local zonesToSyncCheck = 0
 	for i, alarmZone in ipairs(config.ALARM_ZONES) do
-	
-		if alarmZone.syncDomoSecToThisZone then
-		
-			if alarmZone.syncThisZoneToDomoSec then
-				domoticz.log('Configuration error in zone '..alarmZone.name
-					..'. Both syncDomoSecToThisZone and syncThisZoneToDomoSec should not used at the same time!', domoticz.LOG_ERROR)
+
+		if alarmZone.syncWithDomoSec then
+			zonesToSyncCheck = zonesToSyncCheck + 1
+			if zonesToSyncCheck > 1 then
+				domoticz.log('Configuration file error. Only a single zone can be set up to synchronize with the Domoticz\'s security panel.', domoticz.LOG_ERROR)
 				return
 			end
-
 			local newArmingMode = triggerInfo.trigger
 			if alarmZone.armingMode ~= newArmingMode then
 				domoticz.log('The Domoticz built in Security\'s arming mode changed to '..newArmingMode, domoticz.LOG_INFO)
@@ -372,8 +366,7 @@ function ideAlarm.statusAll(domoticz)
 	for i, alarmZone in ipairs(config.ALARM_ZONES) do
 		statusTxt = statusTxt..'Zone #'..tostring(i)..': '..alarmZone.name
 			..((alarmZone.mainZone) and ' (Main Zone) ' or '')
-			..((alarmZone.syncThisZoneToDomoSec) and ' (Sync to Domo Sec) ' or '')
-			..((alarmZone.syncDomoSecToThisZone) and ' (Sync Domo Sec to zone) ' or '')
+			..((alarmZone.syncWithDomoSec) and ' (Sync with Domoticz\'s Security Panel) ' or '')
 			..', '..domoticz.devices(alarmZone.armingModeTextDevID).state
 			..', '..domoticz.devices(alarmZone.statusTextDevID).state..'\n===========================================\n'
 		-- List all sensors for this zone
@@ -456,15 +449,6 @@ function ideAlarm.armingModeDevIdx(zone)
 	zone = zone or ideAlarm.mainZone()
 	if zone then return(config.ALARM_ZONES[zone].armingModeTextDevID) end
 	return(nil)
-end
-
-function ideAlarm.persistentVariables()
-	local pData = {}
-	for i, alarmZone in pairs(config.ALARM_ZONES) do
-		pData['armAwayToggleBtn'..i] = {history = true, maxItems = 1, maxMinutes = 1} -- Used for counting if switch was pressed multiple times
-		pData['armHomeToggleBtn'..i] = {history = true, maxItems = 1, maxMinutes = 1} -- Used for counting if switch was pressed multiple times
-	end
-	return(pData)
 end
 
 function ideAlarm.triggerDevices()
