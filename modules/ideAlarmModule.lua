@@ -25,15 +25,21 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.40'
+local scriptVersion = '0.9.41'
 local ideAlarm = {}
 
 -- Possible Zone states
 local ZS_NORMAL = 'Normal'
+ideAlarm.ZS_NORMAL = ZS_NORMAL
 local ZS_ALERT = 'Alert'
+ideAlarm.ZS_ALERT = ZS_ALERT
 local ZS_ERROR = 'Error'
+ideAlarm.ERROR = ZS_ERROR
 local ZS_TRIPPED = 'Tripped'
+ideAlarm.TRIPPED = ZS_TRIPPED
 local ZS_TIMED_OUT = 'Timed out'
+ideAlarm.ZS_TIMED_OUT = ZS_TIMED_OUT
+
 local SENSOR_CLASS_A = 'a' -- Sensor active in both arming modes. E.g. "Armed Home" and "Armed Away".
 local SENSOR_CLASS_B = 'b' -- Sensor active in arming mode "Armed Away" only.
 
