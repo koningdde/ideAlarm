@@ -47,8 +47,7 @@ _C.ALARM_ZONES = {
 		armHomeToggleBtn='Toggle Z1 Arm Home',
 		armHomeTogglesNeeded = 1,
 		mainZone = true,
-		syncDomoSecToThisZone = false,
-		syncThisZoneToDomoSec = true,
+		syncWithDomoSec = true, -- Only a sigle zone is allowed to sync with Domoticz's built in Security Panel
 	},
 	-- End configuration of the first alarm zone
 
@@ -69,8 +68,7 @@ _C.ALARM_ZONES = {
 		armHomeToggleBtn = '',
 		armHomeTogglesNeeded = 1,
 		mainZone = false,
-		syncDomoSecToThisZone = false,
-		syncThisZoneToDomoSec = false,
+		syncWithDomoSec = false, -- Only a sigle zone is allowed to sync with Domoticz's built in Security Panel
 	},
 	-- End configuration of the second alarm zone
 }
