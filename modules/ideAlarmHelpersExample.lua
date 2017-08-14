@@ -34,6 +34,18 @@ _C.helpers = {
 			domoticz.PRIORITY_HIGH)
 	end,
 
+	alarmZoneArmingWithActiveSensors = function(domoticz, alarmZone, activeSensors)
+		-- Active sensors has been detected when arming. If canArmWithOpenSensors has been set, 
+		-- arming will proceed. However, if canArmWithOpenSensors has not been set,
+		-- the alarmZoneError function will be called subsequently and arming will not occur.
+		local msg = 'Open sections in '..alarmZone.name..'. '
+		for i, sensor in ipairs(activeSensors) do
+			msg = msg..sensor.name
+			if i < #activeSensors then msg = msg..' and ' end
+		end
+		domoticz.helpers.speak(domoticz, msg, 1)
+	end,
+
 	alarmZoneAlert = function(domoticz, alarmZone, activeSensors, testMode)
 		-- It's ALERT TIME!
 		local msg = 'Intrusion in zone '..alarmZone.name..'. '
