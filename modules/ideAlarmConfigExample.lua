@@ -35,8 +35,8 @@ _C.ALARM_ZONES = {
 		exitDelay=20,
 		alertDevices={'Siren', 'Garden Lights'},
 		sensors = {
-			['Entrance Door'] = {['class'] = SENSOR_CLASS_A, ['enabled'] = true},
-			['Another Door'] = {['class'] = SENSOR_CLASS_A, ['enabled'] = true},
+			['Entrance Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['armWarn'] = true, ['enabled'] = true},
+			['Another Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['armWarn'] = true, ['enabled'] = true},
 		},
 		armAwayToggleBtn='Toggle Z1 Arm Away',
 		armHomeToggleBtn='Toggle Z1 Arm Home',
