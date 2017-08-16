@@ -45,7 +45,7 @@ _C.ALARM_ZONES = {
 		armAwayToggleBtn='Toggle Z1 Arm Away',
 		armHomeToggleBtn='Toggle Z1 Arm Home',
 		mainZone = true,
-		canArmWithOpenSensors = true,
+		canArmWithTrippedSensors = true,
 		syncWithDomoSec = true, -- Only a single zone is allowed to sync with Domoticz's built in Security Panel
 	},
 	-- End configuration of the first alarm zone
@@ -65,7 +65,7 @@ _C.ALARM_ZONES = {
 		armAwayToggleBtn = 'Toggle Z2 Arm Away',
 		armHomeToggleBtn = 'Toggle Z2 Arm Home',
 		mainZone = false,
-		canArmWithOpenSensors = true,
+		canArmWithTrippedSensors = true,
 		syncWithDomoSec = false, -- Only a single zone is allowed to sync with Domoticz's built in Security Panel
 	},
 	-- End configuration of the second alarm zone
