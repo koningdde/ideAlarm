@@ -20,6 +20,11 @@ DO NOT ALTER ANYTHING ABOVE THIS LINE
 
 _C.ALARM_TEST_MODE = false -- if ALARM_TEST_MODE is set to true it will prevent audible alarm
 
+-- Number of seconds which after the alert devices will be turned off
+-- automatically even if an active alert situation still exists.
+-- 0 = Disable automatic turning off alert devices.   
+_C.ALARM_ALERT_MAX_SECONDS = 15
+
 _C.ALARM_ZONES = {
 	-- Start configuration of the first alarm zone
 	{
