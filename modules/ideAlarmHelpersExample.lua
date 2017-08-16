@@ -14,19 +14,22 @@ _C.helpers = {
 		-- Normal is good isn't it? We don't have to do anything here.. We could but..
 	end,
 
-	alarmZoneTripped = function(domoticz, alarmZone, activeSensors)
+	alarmZoneTripped = function(domoticz, alarmZone)
 		-- A sensor has been tripped but there is still no alert
 		-- We should inform whoever tripped the sensor so he/she can disarm the alarm
 		-- before a timeout occors and we get an alert
 		-- In this example we turn on the kitcken lights if the zones name
 		-- is 'My Home' but we could also let Domoticz speak a message or someting.
+
+		--local trippedSensors = alarmZone.trippedSensors(domoticz, 1) -- Can be used if we need to. 
+
 		if alarmZone.name == 'My Home' then
 			-- Let's do something here
 			domoticz.devices('Kitchen Lights').switchOn()
 		end
 	end,
 
-	alarmZoneError = function(domoticz, alarmZone, activeSensors)
+	alarmZoneError = function(domoticz, alarmZone)
 		-- An error occurred for an alarm zone. Maybe a door was open when we tried to
 		-- arm the zone. Anyway we should do something about it.
 		domoticz.notify('Alarm Zone Error!',
@@ -34,25 +37,35 @@ _C.helpers = {
 			domoticz.PRIORITY_HIGH)
 	end,
 
-	alarmZoneArmingWithActiveSensors = function(domoticz, alarmZone, activeSensors)
-		-- Active sensors has been detected when arming. If canArmWithOpenSensors has been set, 
-		-- arming will proceed. However, if canArmWithOpenSensors has not been set,
+	alarmZoneArmingWithTrippedSensors = function(domoticz, alarmZone)
+		-- Tripped sensors has been detected when arming. If canArmWithTrippedSensors has been set, 
+		-- arming will proceed. However, if canArmWithTrippedSensors has not been set,
 		-- the alarmZoneError function will be called subsequently and arming will not occur.
-		local msg = 'Open sections in '..alarmZone.name..'. '
-		for i, sensor in ipairs(activeSensors) do
-			msg = msg..sensor.name
-			if i < #activeSensors then msg = msg..' and ' end
+		-- We exclude sensors from the warning message produced if they are not set as "armWarn"
+		-- in the configuration file.
+		local msg = ''
+		local trippedSensors = alarmZone.trippedSensors(domoticz, 0)
+		for _, sensor in ipairs(trippedSensors) do
+			if alarmZone.sensorConfig(sensor.name).armWarn then
+				if msg ~= '' then msg = msg..' and ' end
+				msg = msg..sensor.name
+			end
 		end
-		domoticz.helpers.speak(domoticz, msg, 1)
+		if msg ~= '' then
+			msg = 'Open sections in '..alarmZone.name..'. '..msg
+			domoticz.notify('Open sections when arming',
+				msg .. alarmZone.name,
+				domoticz.PRIORITY_HIGH)
+		end
 	end,
 
-	alarmZoneAlert = function(domoticz, alarmZone, activeSensors, testMode)
-		-- It's ALERT TIME!
-		local msg = 'Intrusion in zone '..alarmZone.name..'. '
-		for _, sensor in ipairs(activeSensors) do
+	alarmZoneAlert = function(domoticz, alarmZone, testMode)
+		local msg = 'Intrusion detected in zone '..alarmZone.name..'. '
+		local oneMinute = 1
+		for _, sensor in ipairs(alarmZone.trippedSensors(domoticz, oneMinute)) do
 			msg = msg..sensor.name..' tripped @ '..sensor.lastUpdate.raw..'. '
 		end
-		-- We don't have to turn on/off the alert devices. That's handled by the main script.
+
 		if not testMode then
 			domoticz.notify('Alarm Zone Alert!',
 				msg, domoticz.PRIORITY_HIGH)
@@ -67,6 +80,13 @@ _C.helpers = {
 		domoticz.notify('Arming mode change',
 			'There new arming mode for ' .. alarmZone.name .. ' is ' .. alarmZone.armingMode,
 			domoticz.PRIORITY_LOW)
+			-- Buy a Fibaro Wall Plug 2 and configure it to display red when off, green when on
+			-- You can then use it as in alarm arming mode indicator!
+			if alarmZone.armingMode(domoticz) == domoticz.SECURITY_DISARMED then 
+				domoticz.devices('Alarm Status Indicator').switchOff() -- Green light on
+			else
+				domoticz.devices('Alarm Status Indicator').switchOn() -- Red light on
+			end
 	end,
 
 }
