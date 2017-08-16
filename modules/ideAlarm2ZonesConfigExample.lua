@@ -34,13 +34,13 @@ _C.ALARM_ZONES = {
 		exitDelay=20,
 		alertDevices={'Siren', 'Garden Lights'},
 		sensors = {
-			['Entrance Door'] = {['class'] = SENSOR_CLASS_A, ['enabled'] = true},
-			['Another Door'] = {['class'] = SENSOR_CLASS_A, ['enabled'] = true},
+			['Entrance Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['armWarn'] = true, ['enabled'] = true},
+			['Another Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['armWarn'] = true, ['enabled'] = true},
 
 			-- enabled can be a boolean or a function as in the example below
 			-- The sensor below will only trigger the alarm if
 			-- "Master" is not at home and it's dark
-			['Garden Shed Door'] = {['class'] = SENSOR_CLASS_A, ['enabled'] =
+			['Garden Shed Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['armWarn'] = true, ['enabled'] =
 				function(domoticz)
 					return (domoticz.devices('Master Present').state ~= 'On'
 						and domoticz.time.isNightTime)	
@@ -64,8 +64,8 @@ _C.ALARM_ZONES = {
 		exitDelay = 15,
 		alertDevices={'Notting Hill Alert Horn', 'Big Ben Chimes'},
 		sensors = {
-			['Big Gate'] = {['class'] = SENSOR_CLASS_A, ['enabled'] = true},
-			['Patio Door'] = {['class'] = SENSOR_CLASS_B, ['enabled'] = true},
+			['Big Gate'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['armWarn'] = true, ['enabled'] = true},
+			['Patio Door'] = {['class'] = SENSOR_CLASS_B, ['nag'] = true, ['armWarn'] = true, ['enabled'] = true},
 		},
 		armAwayToggleBtn = 'Toggle Z2 Arm Away',
 		armHomeToggleBtn = 'Toggle Z2 Arm Home',
