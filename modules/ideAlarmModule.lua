@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '0.9.60'
+local scriptVersion = '1.0.0'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -208,12 +208,26 @@ local function initAlarmZones()
 			if newArmingMode == domoticz.SECURITY_DISARMED then
 				alarmZone.disArmZone(domoticz)
 			else
-				if #alarmZone.trippedSensors(domoticz, 0) then
+				local trippedSensors = alarmZone.trippedSensors(domoticz, 0)
+				if (#trippedSensors > 0) then
 					callIfDefined('alarmZoneArmingWithTrippedSensors')(domoticz, alarmZone)
 					if alarmZone.canArmWithTrippedSensors then
 						alarmZone.armZone(domoticz, newArmingMode)
 					else
-						alarmZone.updateZoneStatus(domoticz, ZS_ERROR)
+						local msg = ''
+						for _, sensor in ipairs(trippedSensors) do
+							if alarmZone.sensorConfig(sensor.name).armWarn then
+								if msg ~= '' then msg = msg..' and ' end
+								msg = msg..sensor.name
+							end
+						end
+						if msg ~= '' then
+							domoticz.log('An arming attempt has been made with tripped sensor(s) in zone: '
+								..alarmZone.name..'. Tripped sensor(s): '..msg..'.', domoticz.LOG_ERROR)
+							alarmZone.updateZoneStatus(domoticz, ZS_ERROR)
+						else
+							alarmZone.armZone(domoticz, newArmingMode)
+						end
 					end
 				else
 					alarmZone.armZone(domoticz, newArmingMode)
@@ -328,7 +342,6 @@ local function onStatusChange(domoticz, device)
 				callIfDefined('alarmZoneAlert')(domoticz, alarmZone, config.ALARM_TEST_MODE)
 				table.insert(alertingZones, i)
 			elseif alarmZone.status(domoticz) == ZS_ERROR then
-				domoticz.log('An error has occurred for alarm zone  '..alarmZone.name, domoticz.LOG_ERROR)
 				callIfDefined('alarmZoneError')(domoticz, alarmZone)
 			elseif alarmZone.status(domoticz) == ZS_TRIPPED then
 				callIfDefined('alarmZoneTripped')(domoticz, alarmZone)
@@ -489,6 +502,9 @@ function ideAlarm.version()
 	return('ideAlarm V'..scriptVersion)
 end
 
+--- Lists all defined alarm zones and sensors
+-- @param domoticz (Table). The domoticz table object.
+-- @return (String) The listing string.
 function ideAlarm.statusAll(domoticz)
 	local statusTxt = '\n\n'..ideAlarm.version()..'\nListing alarm zones and sensors:\n\n'
 	for i, alarmZone in ipairs(alarmZones) do
