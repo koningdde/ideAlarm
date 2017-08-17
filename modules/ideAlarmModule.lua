@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '1.0.0'
+local scriptVersion = '1.0.1'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -137,7 +137,7 @@ local function initAlarmZones()
 			-- Get a list of all open and active sensors for this zone
 			for sensorName, sensorConfig in pairs(alarmZone.sensors) do
 				local sensor = domoticz.devices(sensorName)
-				if ((mins > 0 and sensor.lastUpdate.minutesAgo < mins)
+				if ((mins > 0 and sensor.lastUpdate.minutesAgo <= mins)
 				or (mins == 0 and (sensor.state == 'Open' or sensor.state == 'On' or sensor.state == 'Unlocked'))) then
 					local isEnabled = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled 
 					if isEnabled then
