@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '1.0.1'
+local scriptVersion = '1.0.2'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -41,7 +41,9 @@ local ZS_TIMED_OUT = 'Timed out'
 ideAlarm.ZS_TIMED_OUT = ZS_TIMED_OUT
 
 local SENSOR_CLASS_A = 'a' -- Sensor active in both arming modes. E.g. "Armed Home" and "Armed Away".
+ideAlarm.SENSOR_CLASS_A = SENSOR_CLASS_A
 local SENSOR_CLASS_B = 'b' -- Sensor active in arming mode "Armed Away" only.
+ideAlarm.SENSOR_CLASS_B = SENSOR_CLASS_B
 
 -- BELOW ARE 3 TEMPORARY FUNCTIONS THAT WILL BE OBSOLETE WHEN DZVENTS 2.3.0 IS RELEASED
 -- Then the state change of a text device will trigger the Domoticz eventsystem
@@ -148,7 +150,7 @@ local function initAlarmZones()
 			return trippedSensors
 		end
 
-		alarmZone.updateZoneStatus =
+		alarmZone._updateZoneStatus =
 		---Function to set the alarm zones status
 		-- @param domoticz The Domoticz object
 		-- @param newStatus Text (Optional) The new status to set.
@@ -159,6 +161,16 @@ local function initAlarmZones()
 		function(domoticz, newStatus, delay)
 			newStatus = newStatus or ZS_NORMAL
 			delay = delay or 0
+			if (newStatus ~= ZS_NORMAL)
+			and (newStatus ~= ZS_ALERT) 
+			and (newStatus ~= ZS_ERROR) 
+			and (newStatus ~= ZS_TRIPPED) 
+			and (newStatus ~= ZS_TIMED_OUT) then
+				domoticz.log('An attempt has been made to set an invalid zone status for zone: '
+								..alarmZone.name, domoticz.LOG_ERROR)
+				newStatus = ZS_ERROR
+				delay = 0
+			end 
 			if alarmZone.status(domoticz) ~= newStatus then
 				setTextDevice(alarmZone.statusTextDevID, newStatus, delay) -- This will trigger this script again
 				domoticz.log(alarmZone.name..' new status: '..newStatus
@@ -174,7 +186,7 @@ local function initAlarmZones()
 			if alarmZone.armingMode(domoticz) ~= domoticz.SECURITY_DISARMED then
 				setTextDevice(alarmZone.armingModeTextDevID, domoticz.SECURITY_DISARMED)
 			end
-			alarmZone.updateZoneStatus(domoticz, ZS_NORMAL)
+			alarmZone._updateZoneStatus(domoticz, ZS_NORMAL)
 		end
 
 		alarmZone.armZone =
@@ -190,12 +202,39 @@ local function initAlarmZones()
 		function(domoticz, armingMode, delay)
 			delay = delay or (armingMode == domoticz.SECURITY_ARMEDAWAY and alarmZone.exitDelay or 0)
 			armingMode = armingMode or domoticz.SECURITY_ARMEDAWAY
+			if (armingMode ~= domoticz.SECURITY_ARMEDAWAY)
+			and (armingMode ~= domoticz.SECURITY_ARMEDHOME) then
+				domoticz.log('An attempt has been made to set an invalid arming mode for zone: '
+								..alarmZone.name, domoticz.LOG_ERROR)
+				return
+			end 
 			if alarmZone.armingMode(domoticz) ~= armingMode then
+				local trippedSensors = alarmZone.trippedSensors(domoticz, 0)
+				if (#trippedSensors > 0) then
+					callIfDefined('alarmZoneArmingWithTrippedSensors')(domoticz, alarmZone)
+					if not alarmZone.canArmWithTrippedSensors then
+						local msg = ''
+						for _, sensor in ipairs(trippedSensors) do
+							if alarmZone.sensorConfig(sensor.name).armWarn
+							and ((armingMode == domoticz.SECURITY_ARMEDAWAY) 
+							or (armingMode == domoticz.SECURITY_ARMEDHOME and alarmZone.sensorConfig(sensor.name).class ~= SENSOR_CLASS_B)) then
+								if msg ~= '' then msg = msg..' and ' end
+								msg = msg..sensor.name
+							end
+						end
+						if msg ~= '' then
+							domoticz.log('An arming attempt has been made with tripped sensor(s) in zone: '
+								..alarmZone.name..'. Tripped sensor(s): '..msg..'.', domoticz.LOG_ERROR)
+							alarmZone._updateZoneStatus(domoticz, ZS_ERROR)
+							return
+						end
+					end
+				end
 				domoticz.log('Arming zone '..alarmZone.name..
 					' to '..armingMode..(delay>0 and ' with a delay of '..delay..' seconds' or ' immediately'), domoticz.LOG_INFO)
 				setTextDevice(alarmZone.armingModeTextDevID, armingMode, delay)
 			end
-			alarmZone.updateZoneStatus(domoticz, ZS_NORMAL)
+			alarmZone._updateZoneStatus(domoticz, ZS_NORMAL)
 		end
 
 		alarmZone.toggleArmingMode =
@@ -208,30 +247,7 @@ local function initAlarmZones()
 			if newArmingMode == domoticz.SECURITY_DISARMED then
 				alarmZone.disArmZone(domoticz)
 			else
-				local trippedSensors = alarmZone.trippedSensors(domoticz, 0)
-				if (#trippedSensors > 0) then
-					callIfDefined('alarmZoneArmingWithTrippedSensors')(domoticz, alarmZone)
-					if alarmZone.canArmWithTrippedSensors then
-						alarmZone.armZone(domoticz, newArmingMode)
-					else
-						local msg = ''
-						for _, sensor in ipairs(trippedSensors) do
-							if alarmZone.sensorConfig(sensor.name).armWarn then
-								if msg ~= '' then msg = msg..' and ' end
-								msg = msg..sensor.name
-							end
-						end
-						if msg ~= '' then
-							domoticz.log('An arming attempt has been made with tripped sensor(s) in zone: '
-								..alarmZone.name..'. Tripped sensor(s): '..msg..'.', domoticz.LOG_ERROR)
-							alarmZone.updateZoneStatus(domoticz, ZS_ERROR)
-						else
-							alarmZone.armZone(domoticz, newArmingMode)
-						end
-					end
-				else
-					alarmZone.armZone(domoticz, newArmingMode)
-				end
+				alarmZone.armZone(domoticz, newArmingMode)
 			end
 		end
 
@@ -348,10 +364,10 @@ local function onStatusChange(domoticz, device)
 			elseif alarmZone.status(domoticz) == ZS_TIMED_OUT then
 				if alarmZone.armingMode(domoticz) ~= domoticz.SECURITY_DISARMED then
 					-- A sensor was tripped, delay time has passed and the zone is still armed so ...
-					alarmZone.updateZoneStatus(domoticz, ZS_ALERT)
+					alarmZone._updateZoneStatus(domoticz, ZS_ALERT)
 				else
 					domoticz.log('No need for any noise, the zone is obviously disarmed now.', domoticz.LOG_INFO)
-					alarmZone.updateZoneStatus(domoticz, ZS_NORMAL)
+					alarmZone._updateZoneStatus(domoticz, ZS_NORMAL)
 				end
 			end
 
@@ -410,9 +426,9 @@ local function onSensorChange(domoticz, device)
 					local alarmStatus = domoticz.devices(alarmZone.statusTextDevID).state
 					if  alarmStatus ~= ZS_TRIPPED and alarmStatus ~= ZS_TIMED_OUT and alarmStatus ~= ZS_ALERT then
 						if (alarmZone.entryDelay > 0) then
-							alarmZone.updateZoneStatus(domoticz, ZS_TRIPPED) -- Skip ZS_TRIPPED status if 0 secs entry delay 
+							alarmZone._updateZoneStatus(domoticz, ZS_TRIPPED) -- Skip ZS_TRIPPED status if 0 secs entry delay 
 						end
-						alarmZone.updateZoneStatus(domoticz, ZS_TIMED_OUT, alarmZone.entryDelay) 
+						alarmZone._updateZoneStatus(domoticz, ZS_TIMED_OUT, alarmZone.entryDelay) 
 					end
 	  		end
 	  		break -- Let this sensor trigger only once in this zone
