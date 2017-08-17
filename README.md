@@ -6,9 +6,6 @@ Multiple zones dzVents alarm script for Domoticz
 ## Get started!
 Wiki with installation instructions: https://github.com/allan-gam/ideAlarm/wiki
 
-## Software status
-Testing
-
 ## About
 ideAlarm is written in LUA and runs on the [Domoticz](http://www.domoticz.com/wiki/Domoticz_Wiki_Manual) built in [dzVents Lua Framework](http://www.domoticz.com/forum/viewforum.php?f=59).
 
