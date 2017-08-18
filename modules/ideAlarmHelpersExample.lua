@@ -38,19 +38,15 @@ _C.helpers = {
 	end,
 
 	alarmZoneArmingWithTrippedSensors = function(domoticz, alarmZone, armingMode)
-		-- Tripped sensors has been detected when arming. If canArmWithTrippedSensors has been set, 
-		-- arming will proceed. However, if canArmWithTrippedSensors has not been set,
-		-- the alarmZoneError function will be called subsequently and arming will not occur.
-		-- We exclude sensors from the warning message produced if they are not set as "armWarn"
-		-- in the configuration file.
+		-- Tripped sensors have been detected when arming. If canArmWithTrippedSensors has been set
+		-- to true in the configuration file for the zone, arming will proceed,
+		-- if not, then the alarmZoneError function will be called subsequently and arming will not occur.
 		local msg = ''
 		local isArming = true
 		local trippedSensors = alarmZone.trippedSensors(domoticz, 0, armingMode, isArming)
 		for _, sensor in ipairs(trippedSensors) do
-			if alarmZone.sensorConfig(sensor.name).armWarn then
-				if msg ~= '' then msg = msg..' and ' end
-				msg = msg..sensor.name
-			end
+			if msg ~= '' then msg = msg..' and ' end
+			msg = msg..sensor.name
 		end
 		if msg ~= '' then
 			msg = 'Open sections in '..alarmZone.name..'. '..msg
