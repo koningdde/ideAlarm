@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '1.0.2'
+local scriptVersion = '1.0.3'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -132,17 +132,28 @@ local function initAlarmZones()
 		-- @param domoticz The Domoticz object
 		-- @param mins Integer 0-9999 Number of minutes that the sensor must have been updated within.
 		-- A 0 value will return sensor devices who are currently tripped. 
+		-- @param armingMode String One of domoticz.SECURITY_ARMEDAWAY, domoticz.SECURITY_ARMEDHOME or domoticz.SECURITY_DISARMED
+		-- A sensor is regarded to be tripped only in the context of an arming mode. Defaults to the zones current arming mode. 
+		-- @param isArming Boolean. In an arming scenario we don't want to include sensors that are set not to warn when arming.
 		-- @return Table with tripped Domoricz devices
-		function(domoticz, mins)
+		function(domoticz, mins, armingMode, isArming)
 			mins = mins or 1
+			armingMode = armingMode or alarmZone.armingMode(domoticz)
+			isArming = isArming or false
 			local trippedSensors = {}
+			if armingMode == domoticz.SECURITY_DISARMED then return trippedSensors end
 			-- Get a list of all open and active sensors for this zone
 			for sensorName, sensorConfig in pairs(alarmZone.sensors) do
 				local sensor = domoticz.devices(sensorName)
 				if ((mins > 0 and sensor.lastUpdate.minutesAgo <= mins)
 				or (mins == 0 and (sensor.state == 'Open' or sensor.state == 'On' or sensor.state == 'Unlocked'))) then
-					local isEnabled = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled 
-					if isEnabled then
+					local includeSensor = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled
+					if includeSensor and isArming then includeSensor = sensorConfig.armWarn end
+					if includeSensor then
+						includeSensor = (armingMode == domoticz.SECURITY_ARMEDAWAY) 
+							or (armingMode == domoticz.SECURITY_ARMEDHOME and sensorConfig.class ~= SENSOR_CLASS_B)
+					end 
+					if includeSensor then
 						table.insert(trippedSensors, sensor)
 					end
 				end
@@ -209,25 +220,20 @@ local function initAlarmZones()
 				return
 			end 
 			if alarmZone.armingMode(domoticz) ~= armingMode then
-				local trippedSensors = alarmZone.trippedSensors(domoticz, 0)
+				local isArming = true
+				local trippedSensors = alarmZone.trippedSensors(domoticz, 0, armingMode, isArming)
 				if (#trippedSensors > 0) then
-					callIfDefined('alarmZoneArmingWithTrippedSensors')(domoticz, alarmZone)
+					callIfDefined('alarmZoneArmingWithTrippedSensors')(domoticz, alarmZone, armingMode)
 					if not alarmZone.canArmWithTrippedSensors then
 						local msg = ''
 						for _, sensor in ipairs(trippedSensors) do
-							if alarmZone.sensorConfig(sensor.name).armWarn
-							and ((armingMode == domoticz.SECURITY_ARMEDAWAY) 
-							or (armingMode == domoticz.SECURITY_ARMEDHOME and alarmZone.sensorConfig(sensor.name).class ~= SENSOR_CLASS_B)) then
-								if msg ~= '' then msg = msg..' and ' end
-								msg = msg..sensor.name
-							end
+							if msg ~= '' then msg = msg..' and ' end
+							msg = msg..sensor.name
 						end
-						if msg ~= '' then
-							domoticz.log('An arming attempt has been made with tripped sensor(s) in zone: '
-								..alarmZone.name..'. Tripped sensor(s): '..msg..'.', domoticz.LOG_ERROR)
-							alarmZone._updateZoneStatus(domoticz, ZS_ERROR)
-							return
-						end
+						domoticz.log('An arming attempt has been made with tripped sensor(s) in zone: '
+							..alarmZone.name..'. Tripped sensor(s): '..msg..'.', domoticz.LOG_ERROR)
+						alarmZone._updateZoneStatus(domoticz, ZS_ERROR)
+						return
 					end
 				end
 				domoticz.log('Arming zone '..alarmZone.name..
