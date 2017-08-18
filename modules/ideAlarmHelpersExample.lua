@@ -17,9 +17,9 @@ _C.helpers = {
 	alarmZoneTripped = function(domoticz, alarmZone)
 		-- A sensor has been tripped but there is still no alert
 		-- We should inform whoever tripped the sensor so he/she can disarm the alarm
-		-- before a timeout occors and we get an alert
-		-- In this example we turn on the kitcken lights if the zones name
-		-- is 'My Home' but we could also let Domoticz speak a message or someting.
+		-- before a timeout occurs and we get an alert
+		-- In this example we turn on the kitchen lights if the zones name
+		-- is 'My Home' but we could also let Domoticz speak a message or something.
 
 		--local trippedSensors = alarmZone.trippedSensors(domoticz, 1) -- Can be used if we need to. 
 
@@ -37,14 +37,15 @@ _C.helpers = {
 			domoticz.PRIORITY_HIGH)
 	end,
 
-	alarmZoneArmingWithTrippedSensors = function(domoticz, alarmZone)
+	alarmZoneArmingWithTrippedSensors = function(domoticz, alarmZone, armingMode)
 		-- Tripped sensors has been detected when arming. If canArmWithTrippedSensors has been set, 
 		-- arming will proceed. However, if canArmWithTrippedSensors has not been set,
 		-- the alarmZoneError function will be called subsequently and arming will not occur.
 		-- We exclude sensors from the warning message produced if they are not set as "armWarn"
 		-- in the configuration file.
 		local msg = ''
-		local trippedSensors = alarmZone.trippedSensors(domoticz, 0)
+		local isArming = true
+		local trippedSensors = alarmZone.trippedSensors(domoticz, 0, armingMode, isArming)
 		for _, sensor in ipairs(trippedSensors) do
 			if alarmZone.sensorConfig(sensor.name).armWarn then
 				if msg ~= '' then msg = msg..' and ' end
