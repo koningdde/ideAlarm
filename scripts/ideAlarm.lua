@@ -6,8 +6,11 @@ Please read: https://github.com/allan-gam/ideAlarm/wiki
 Note that any changes to this file will be lost when upgrading.
 --]]
 
-package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
---print(package.path)
+if not string.match(package.path, 'modules') then
+	package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
+	-- The modules folder will be added by dzVents in some version
+	--print(package.path)
+end
 local alarm = require "ideAlarmModule"
 
 local triggerDevices = alarm.triggerDevices()
@@ -26,7 +29,7 @@ return {
 		if not (device and (device.state == 'Closed' or device.state == 'Off')) then
 			domoticz.log('Triggered by '..((device) and 'device: '..device.name..', device state is: '..device.state or 'Domoticz Security'), domoticz.LOG_DEBUG)
 			alarm.execute(domoticz, device, triggerInfo)
-		end  
+		end
 
 	end
 }
