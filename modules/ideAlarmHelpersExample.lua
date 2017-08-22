@@ -14,6 +14,12 @@ _C.helpers = {
 		-- Normal is good isn't it? We don't have to do anything here.. We could but..
 	end,
 
+	alarmZoneArming = function(domoticz, alarmZone)
+		-- You can define something to happen here.
+		-- This function will be called when arming and waiting for the exit delay.
+		-- If the exit delay is 0 seconds, this function will not be called.
+	end,
+
 	alarmZoneTripped = function(domoticz, alarmZone)
 		-- A sensor has been tripped but there is still no alert
 		-- We should inform whoever tripped the sensor so he/she can disarm the alarm
