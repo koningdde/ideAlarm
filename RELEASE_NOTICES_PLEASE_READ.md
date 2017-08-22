@@ -1,3 +1,5 @@
+***Version 1.1.0***
+- Added the new zone state alarm.***ZS_ARMING***. A new ideAlarm custom helper function (***alarmZoneArming***) can now be used.
 
 ***Version 1.0.3***
 - Logic improvements.
