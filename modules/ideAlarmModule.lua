@@ -25,12 +25,14 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '1.0.3'
+local scriptVersion = '1.1.0'
 local ideAlarm = {}
 
 -- Possible Zone statuses
 local ZS_NORMAL = 'Normal'
 ideAlarm.ZS_NORMAL = ZS_NORMAL
+local ZS_ARMING = 'Arming'
+ideAlarm.ZS_ARMING = ZS_ARMING
 local ZS_ALERT = 'Alert'
 ideAlarm.ZS_ALERT = ZS_ALERT
 local ZS_ERROR = 'Error'
@@ -97,7 +99,7 @@ local function initAlarmZones()
 		alarmZone.status =
 		--- Gets the alarm zone's status 
 		-- @param domoticz The Domoticz object
-		-- @return String. One of alarm.ZS_NORMAL, alarm.ZS_ALERT, alarm.ERROR,
+		-- @return String. One of alarm.ZS_NORMAL, alarm.ZS_ARMING, alarm.ZS_ALERT, alarm.ERROR,
 		-- alarm.ZS_TRIPPED or alarm.ZS_TIMED_OUT
 		function(domoticz)
 			return(domoticz.devices(alarmZone.statusTextDevID).state)
@@ -166,16 +168,17 @@ local function initAlarmZones()
 		-- @param domoticz The Domoticz object
 		-- @param newStatus Text (Optional) The new status to set.
 		-- @param delay Integer (Optional) Delay in seconds.
-		-- One of alarm.ZS_NORMAL, alarm.ZS_ALERT, alarm.ERROR,
+		-- One of alarm.ZS_NORMAL, alarm.ZS_ARMING, alarm.ZS_ALERT, alarm.ERROR,
 		-- alarm.ZS_TRIPPED or alarm.ZS_TIMED_OUT. Defaults to alarm.ZS_NORMAL
 		-- @return Nil
 		function(domoticz, newStatus, delay)
 			newStatus = newStatus or ZS_NORMAL
 			delay = delay or 0
 			if (newStatus ~= ZS_NORMAL)
-			and (newStatus ~= ZS_ALERT) 
-			and (newStatus ~= ZS_ERROR) 
-			and (newStatus ~= ZS_TRIPPED) 
+			and (newStatus ~= ZS_ARMING)
+			and (newStatus ~= ZS_ALERT)
+			and (newStatus ~= ZS_ERROR)
+			and (newStatus ~= ZS_TRIPPED)
 			and (newStatus ~= ZS_TIMED_OUT) then
 				domoticz.log('An attempt has been made to set an invalid zone status for zone: '
 								..alarmZone.name, domoticz.LOG_ERROR)
@@ -190,14 +193,14 @@ local function initAlarmZones()
 		end
 
 		alarmZone.disArmZone =
-		--- Disarms the zone unless it's already disarmed. Disarming a zone also resets it's status
+		--- Disarms the zone unless it's already disarmed.
 		-- @param domoticz The Domoticz object
 		-- @return Nil
 		function(domoticz)
 			if alarmZone.armingMode(domoticz) ~= domoticz.SECURITY_DISARMED then
 				setTextDevice(alarmZone.armingModeTextDevID, domoticz.SECURITY_DISARMED)
 			end
-			alarmZone._updateZoneStatus(domoticz, ZS_NORMAL)
+			--alarmZone._updateZoneStatus(domoticz, ZS_NORMAL)
 		end
 
 		alarmZone.armZone =
@@ -236,11 +239,13 @@ local function initAlarmZones()
 						return
 					end
 				end
+				if delay > 0 then
+					alarmZone._updateZoneStatus(domoticz, ZS_ARMING)
+				end
 				domoticz.log('Arming zone '..alarmZone.name..
 					' to '..armingMode..(delay>0 and ' with a delay of '..delay..' seconds' or ' immediately'), domoticz.LOG_INFO)
 				setTextDevice(alarmZone.armingModeTextDevID, armingMode, delay)
 			end
-			alarmZone._updateZoneStatus(domoticz, ZS_NORMAL)
 		end
 
 		alarmZone.toggleArmingMode =
@@ -360,6 +365,8 @@ local function onStatusChange(domoticz, device)
 
 			if alarmZone.status(domoticz) == ZS_NORMAL then
 				callIfDefined('alarmZoneNormal')(domoticz, alarmZone)
+			elseif alarmZone.status(domoticz) == ZS_ARMING then
+				callIfDefined('alarmZoneArming')(domoticz, alarmZone)
 			elseif alarmZone.status(domoticz) == ZS_ALERT then
 				callIfDefined('alarmZoneAlert')(domoticz, alarmZone, config.ALARM_TEST_MODE)
 				table.insert(alertingZones, i)
@@ -367,6 +374,7 @@ local function onStatusChange(domoticz, device)
 				callIfDefined('alarmZoneError')(domoticz, alarmZone)
 			elseif alarmZone.status(domoticz) == ZS_TRIPPED then
 				callIfDefined('alarmZoneTripped')(domoticz, alarmZone)
+
 			elseif alarmZone.status(domoticz) == ZS_TIMED_OUT then
 				if alarmZone.armingMode(domoticz) ~= domoticz.SECURITY_DISARMED then
 					-- A sensor was tripped, delay time has passed and the zone is still armed so ...
@@ -392,6 +400,7 @@ local function onArmingModeChange(domoticz, device)
 		-- Deal with arming mode changes
 		-- E.g. the text device text for arming mode has changed
 		if (device.id == alarmZone.armingModeTextDevID) then
+			alarmZone._updateZoneStatus(domoticz, ZS_NORMAL) -- Always set to normal when arming mode changes
 			callIfDefined('alarmArmingModeChanged')(domoticz, alarmZone)
 
 			local armingMode = alarmZone.armingMode(domoticz)
