@@ -19,6 +19,11 @@ DO NOT ALTER ANYTHING ABOVE THIS LINE
 
 _C.ALARM_TEST_MODE = false -- if ALARM_TEST_MODE is set to true it will prevent audible alarm
 
+-- Interval for how often we shall trigger the script to check if nagging about open doors needs to be made 
+_C.NAG_SCRIPT_TRIGGER_INTERVAL = {'every other minute'} -- Format as defined by dzVents timers
+-- Interval for how often we shall repeat nagging.
+_C.NAG_INTERVAL_MINUTES = 6 
+
 -- Number of seconds which after the alert devices will be turned off
 -- automatically even if an active alert situation still exists.
 -- 0 = Disable automatic turning off alert devices.   
@@ -34,13 +39,13 @@ _C.ALARM_ZONES = {
 		exitDelay=20,
 		alertDevices={'Siren', 'Garden Lights'},
 		sensors = {
-			['Entrance Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['nagTimeoutSecs'] = 300, ['armWarn'] = true, ['enabled'] = true},
-			['Another Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['nagTimeoutSecs'] = 300, ['armWarn'] = true, ['enabled'] = true},
+			['Entrance Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['nagTimeoutMins'] = 5, ['armWarn'] = true, ['enabled'] = true},
+			['Another Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['nagTimeoutMins'] = 5, ['armWarn'] = true, ['enabled'] = true},
 
 			-- enabled can be a boolean or a function as in the example below
 			-- The sensor below will only trigger the alarm if
 			-- "Master" is not at home and it's dark
-			['Garden Shed Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['nagTimeoutSecs'] = 300, ['armWarn'] = true, ['enabled'] =
+			['Garden Shed Door'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['nagTimeoutMins'] = 5, ['armWarn'] = true, ['enabled'] =
 				function(domoticz)
 					return (domoticz.devices('Master Present').state ~= 'On'
 						and domoticz.time.isNightTime)	
@@ -64,8 +69,8 @@ _C.ALARM_ZONES = {
 		exitDelay = 15,
 		alertDevices={'Notting Hill Alert Horn', 'Big Ben Chimes'},
 		sensors = {
-			['Big Gate'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['nagTimeoutSecs'] = 300, ['armWarn'] = true, ['enabled'] = true},
-			['Patio Door'] = {['class'] = SENSOR_CLASS_B, ['nag'] = true, ['nagTimeoutSecs'] = 300, ['armWarn'] = true, ['enabled'] = true},
+			['Big Gate'] = {['class'] = SENSOR_CLASS_A, ['nag'] = true, ['nagTimeoutMins'] = 5, ['armWarn'] = true, ['enabled'] = true},
+			['Patio Door'] = {['class'] = SENSOR_CLASS_B, ['nag'] = true, ['nagTimeoutSecs'] = 5, ['armWarn'] = true, ['enabled'] = true},
 		},
 		armAwayToggleBtn = 'Toggle Z2 Arm Away',
 		armHomeToggleBtn = 'Toggle Z2 Arm Home',
