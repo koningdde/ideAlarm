@@ -1,6 +1,3 @@
-# upgrade in progress...
-Scripts and wiki is currently being upgraded to version 2.0. So, wait a few more hours before you install.
-
 # ideAlarm
 Multiple zones dzVents alarm script for Domoticz
 
