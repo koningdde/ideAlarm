@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '1.1.0'
+local scriptVersion = '2.0.0'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -480,6 +480,87 @@ local function onSecurityChange(domoticz, triggerInfo)
 	end
 end
 
+--- Checks how many open sensors there are in each zone.
+-- Inserts the openSensorCount item into each alarmZone object
+-- If defined, calls the ideAlarm custom helper function alarmOpenSensorsAllZones
+-- @param domoticz The Domoticz object
+-- @return Nil
+local function countOpenSensors(domoticz)
+	for i, alarmZone in ipairs(alarmZones) do
+		local openSensorCount = 0
+		for sensorName, sensorConfig in pairs(alarmZone.sensors) do
+			local sensor = domoticz.devices(sensorName)
+			if sensor then
+				local includeSensor = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled
+				if includeSensor and sensorConfig.nag and (sensor.state == 'On' or sensor.state == 'Open') then
+					openSensorCount = openSensorCount + 1
+				end
+			end
+		end
+		alarmZone.openSensorCount = openSensorCount
+	end
+	callIfDefined('alarmOpenSensorsAllZones')(domoticz, alarmZones)
+end
+
+--- Nags periodically about open sensors 
+-- @param domoticz The Domoticz object
+-- @param triggerInfo The triggerInfo object
+-- @return Nil
+local function nagCheck(domoticz, device, triggerInfo)
+	-- You just came here to nag about open doors, didn't you?
+	local nagEventData = domoticz.data.nagEvent
+	local nagEventItem = nagEventData.getLatest()
+	if not nagEventItem then
+		nagEventData.add('dzVents rocks!')
+		nagEventItem = nagEventData.getLatest()
+	end
+
+	if not device then
+		-- Triggered by a timer  event
+		-- First check if we have nagged recently.
+		local lastNagMinutesAgo = nagEventItem.time.minutesAgo
+		if lastNagMinutesAgo < ideAlarm.nagInterval() then
+			return
+		end
+	end
+
+	local hasNagged = false
+
+	for i, alarmZone in ipairs(alarmZones) do
+		local nagSensors = {}
+		for sensorName, sensorConfig in pairs(alarmZone.sensors) do
+			local sensor = domoticz.devices(sensorName)
+			if sensor then
+				local includeSensor = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled
+				if includeSensor then
+					includeSensor = ((alarmZone.armingMode(domoticz) == domoticz.SECURITY_DISARMED) 
+						or (alarmZone.armingMode(domoticz) == domoticz.SECURITY_ARMEDHOME and sensorConfig.class == SENSOR_CLASS_B))
+				end
+				local minutesAgo = sensor.lastUpdate.minutesAgo
+				if includeSensor and sensorConfig.nag
+				and (sensor.state == 'On' or sensor.state == 'Open')
+				and minutesAgo >= sensorConfig.nagTimeoutMins then
+					-- This sensor is worth nagging about
+					table.insert(nagSensors, sensor)
+				end
+			end
+		end
+		if #nagSensors > 0 then hasNagged = true end
+		local lastValue = domoticz.data['nagZ'..tostring(i)]
+		if (#nagSensors > 0) or (#nagSensors == 0 and lastValue > 0) then 
+			callIfDefined('alarmNagOpenSensors')(domoticz, alarmZone, nagSensors, lastValue)
+		end
+		domoticz.data['nagZ'..tostring(i)] = #nagSensors
+	end
+	if hasNagged then
+		nagEventData.add('dzVents rocks!') -- Reset
+	end
+end
+
+local function onTimerTrigger(domoticz, triggerInfo)
+	nagCheck(domoticz, nil, triggerInfo)
+end
+
 function ideAlarm.execute(domoticz, device, triggerInfo)
 
 	local triggerType
@@ -495,16 +576,15 @@ function ideAlarm.execute(domoticz, device, triggerInfo)
 					triggerType = 'armingMode' -- Alarm Zone Arming Mode change
 					break
 				end
-			elseif device.state == 'Open' or device.state == 'On' then
-				if device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn then
-					triggerType = 'toggleSwitch'
-					break
-				end
-			else
-				return  -- We are not interested in 'Closed' or 'Off' states
+			elseif (device.state == 'Open' or device.state == 'On')
+			and (device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn) then
+				triggerType = 'toggleSwitch'
+				break
 			end
 		end
 		triggerType = triggerType or 'sensor'
+	elseif triggerInfo.type == domoticz.EVENT_TYPE_TIMER then
+		triggerType = 'timer'
 	elseif triggerInfo.type == domoticz.EVENT_TYPE_SECURITY then
 		triggerType = 'security'
 	end
@@ -521,10 +601,17 @@ function ideAlarm.execute(domoticz, device, triggerInfo)
 		onArmingModeChange(domoticz, device)
 		return
 	elseif triggerType == 'sensor' then
-		onSensorChange(domoticz, device)
+		if device.state == 'Open' or device.state == 'On' then
+			onSensorChange(domoticz, device) -- Only Open or On states are of interest
+		else
+			nagCheck(domoticz, device) -- Only Closed or Off states are of interest
+		end
+		countOpenSensors(domoticz)
 		return
 	elseif triggerType == 'security' then
 		onSecurityChange(domoticz, triggerInfo)
+	elseif triggerType == 'timer' then
+		onTimerTrigger(domoticz, triggerInfo)
 	end
 
 end
@@ -589,6 +676,19 @@ end
 -- @return Integer
 function ideAlarm.qtyAlarmZones()
 	return(#alarmZones)
+end
+
+--- Get the timer triggers
+-- @return table
+function ideAlarm.timerTriggers()
+	local nagTriggerInterval = config.NAG_SCRIPT_TRIGGER_INTERVAL or {'every minute'}
+	return nagTriggerInterval
+end
+
+--- Get the nag interval
+-- @return integer
+function ideAlarm.nagInterval()
+	return (config.NAG_INTERVAL_MINUTES or 6)
 end
 
 --- Get all devices that ideAlarm shall trigger upon
