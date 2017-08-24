@@ -1,3 +1,12 @@
+**If upgrading from previous versions**
+Below are important instructions if you are upgrading ideAlarm from a previous version. If you make a new installation you can ignore what follows.
+
+**PLEASE GO THROW ALL OF THE STEPS BELOW, DON'T SKIP ANY VERSION**
+
+***Version 2.0.0***
+- **BREAKING CHANGE** Action is required if upgrading from a previous version. The configuration file has 2 new variables and one old variable has changed name. Therefore you should make a change in your file **ideAlarmConfig.lua** (located in the modules folder) Please add the variables C.NAG_SCRIPT_TRIGGER_INTERVAL and C.NAG_INTERVAL_MINUTES as you can see in the [configuration file example](https://github.com/allan-gam/ideAlarm/blob/master/modules/ideAlarmConfigExample.lua). Then for every sensor that you have defined, there is a variable named **nagTimeoutSecs**. Rename all of those to **nagTimeoutMins** and change the value to 5.
+- Two new custom optional helper functions can now be used. You don't have to define them, but if you wish to use them, the examples can be seen at the very end of The example custom [event helper](https://github.com/allan-gam/ideAlarm/wiki/Event-Helpers). The new functions are named **alarmNagOpenSensors** and **alarmOpenSensorsAllZones**. You can read about them in the Wiki.
+
 ***Version 1.1.0***
 - Added the new zone state alarm.***ZS_ARMING***. A new ideAlarm custom helper function (***alarmZoneArming***) can now be used.
 
