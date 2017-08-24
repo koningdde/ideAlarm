@@ -92,6 +92,35 @@ _C.helpers = {
 			end
 	end,
 
+	alarmNagOpenSensors = function(domoticz, alarmZone, nagSensors, lastValue)
+		if alarmZone.name == 'My home' then
+			if #nagSensors == 0 and lastValue > 0 then
+				domoticz.log('The previously reported sections are now closed! Good work!', domoticz.LOG_INFO)
+			elseif #nagSensors > 0 then
+				local msg = ''
+				for _, sensor in ipairs(nagSensors) do
+					if msg ~= '' then msg = msg..' and ' end
+					msg = msg..sensor.name
+				end
+				msg = 'Open sections in zone: '..alarmZone.name..'. '..msg
+				domoticz.log(msg, domoticz.LOG_INFO)
+			end
+		end
+	end,
+
+	alarmOpenSensorsAllZones = function(domoticz, alarmZones)
+		-- Toggle the big red lamp if there are any open sensors in 'My House'
+		for _, alarmZone in ipairs(alarmZones) do
+			if alarmZone.name == 'My House' then
+				if (alarmZone.openSensorCount > 0) then
+					domoticz.devices('Big Red Lamp').switchOn()
+				elseif (alarmZone.openSensorCount == 0) then
+					domoticz.devices('Big Red Lamp').switchOff()
+				end
+			end
+		end
+	end,
+
 }
 
 return _C
