@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '2.0.0'
+local scriptVersion = '2.0.1'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -524,9 +524,9 @@ local function nagCheck(domoticz, device, triggerInfo)
 		end
 	end
 
-	local hasNagged = false
-
-	for i, alarmZone in ipairs(alarmZones) do
+	local zonesNagSensors = {}
+	local totalSensors = 0
+	for _, alarmZone in ipairs(alarmZones) do
 		local nagSensors = {}
 		for sensorName, sensorConfig in pairs(alarmZone.sensors) do
 			local sensor = domoticz.devices(sensorName)
@@ -542,16 +542,26 @@ local function nagCheck(domoticz, device, triggerInfo)
 				and minutesAgo >= sensorConfig.nagTimeoutMins then
 					-- This sensor is worth nagging about
 					table.insert(nagSensors, sensor)
+					totalSensors = totalSensors + 1
 				end
 			end
 		end
-		if #nagSensors > 0 then hasNagged = true end
+		table.insert(zonesNagSensors, nagSensors)
+	end
+
+	-- Exit if triggered by device and not all sections in all zones are closed/off 
+	if totalSensors > 0 and device then return end
+
+	local hasNagged = false
+	for i, nagSensors in ipairs(zonesNagSensors) do
 		local lastValue = domoticz.data['nagZ'..tostring(i)]
+		if #nagSensors > 0 then hasNagged = true end
 		if (#nagSensors > 0) or (#nagSensors == 0 and lastValue > 0) then 
-			callIfDefined('alarmNagOpenSensors')(domoticz, alarmZone, nagSensors, lastValue)
+			callIfDefined('alarmNagOpenSensors')(domoticz, alarmZones[i], nagSensors, lastValue)
 		end
 		domoticz.data['nagZ'..tostring(i)] = #nagSensors
 	end
+
 	if hasNagged then
 		nagEventData.add('dzVents rocks!') -- Reset
 	end
