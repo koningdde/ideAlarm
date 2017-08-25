@@ -1,7 +1,13 @@
 **If upgrading from previous versions**
 Below are important instructions if you are upgrading ideAlarm from a previous version. If you make a new installation you can ignore what follows.
 
-**PLEASE GO THROW ALL OF THE STEPS BELOW, DON'T SKIP ANY VERSION**
+**PLEASE MAKE SURE THAT YOU GO THROUGH ALL STEPS BELOW WHERE IT SAYS "BREAKING CHANGE", DON'T SKIP ANY VERSION**
+
+***Version 2.0.2***
+- Removed hard coding of local protocol, IP and port.
+
+***Version 2.0.1***
+- Fixed an issue where nagging occured to often.
 
 ***Version 2.0.0***
 - **BREAKING CHANGE** Action is required if upgrading from a previous version. The configuration file has 2 new variables and another old variable has changed name. Therefore you should make a change in your file **ideAlarmConfig.lua** (located in the modules folder) Please add the variables **_C.NAG_SCRIPT_TRIGGER_INTERVAL** and **_C.NAG_INTERVAL_MINUTES** as you can see in the [configuration file example](https://github.com/allan-gam/ideAlarm/blob/master/modules/ideAlarmConfigExample.lua). Then for every sensor that you have defined, there is a variable named **nagTimeoutSecs**. Rename all of those to **nagTimeoutMins** and change the value to 5.
