@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '2.0.1'
+local scriptVersion = '2.0.2'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -49,13 +49,16 @@ ideAlarm.SENSOR_CLASS_B = SENSOR_CLASS_B
 
 -- BELOW ARE 3 TEMPORARY FUNCTIONS THAT WILL BE OBSOLETE WHEN DZVENTS 2.3.0 IS RELEASED
 -- Then the state change of a text device will trigger the Domoticz eventsystem
-local function jsonAPI(apiCall, delay)
-	local domoticzHost = '127.0.0.1'
-	local domoticzPort = '8080'
+local function jsonAPI(domoticz, apiCall, delay)
 	delay = delay or 0
-	local url = 'http://'..domoticzHost..':'..domoticzPort..'/json.htm?'
-	os.execute('(sleep '..delay..';curl -s "'..url..apiCall..'" > /dev/null)&')
+	local url = domoticz.settings['Domoticz url']..'/json.htm?'..apiCall
+	if delay == 0 then
+		domoticz.openURL(url)
+	else
+		os.execute('(sleep '..delay..';curl -s "'..url..'" > /dev/null)&')
+	end
 end
+
 local function urlEncode(str)
 	if (str) then
 		str = string.gsub (str, '\n', '\r\n')
@@ -65,9 +68,10 @@ local function urlEncode(str)
 	end
 	return str
 end
-local function setTextDevice(idx, sValue, delay)
+
+local function setTextDevice(domoticz, idx, sValue, delay)
 	delay = delay or 0
-	jsonAPI('type=command&param=udevice&idx='..idx.."&nvalue=0&svalue="..urlEncode(sValue), delay)
+	jsonAPI(domoticz, 'type=command&param=udevice&idx='..idx.."&nvalue=0&svalue="..urlEncode(sValue), delay)
 end
 -- END TEMPORARY FUNCTIONS
 
@@ -186,7 +190,7 @@ local function initAlarmZones()
 				delay = 0
 			end 
 			if alarmZone.status(domoticz) ~= newStatus then
-				setTextDevice(alarmZone.statusTextDevID, newStatus, delay) -- This will trigger this script again
+				setTextDevice(domoticz, alarmZone.statusTextDevID, newStatus, delay) -- This will trigger this script again
 				domoticz.log(alarmZone.name..' new status: '..newStatus
 					..(delay>0 and ' with a delay of '..delay..' seconds' or ' immediately'), domoticz.LOG_INFO)
 			end
@@ -198,9 +202,8 @@ local function initAlarmZones()
 		-- @return Nil
 		function(domoticz)
 			if alarmZone.armingMode(domoticz) ~= domoticz.SECURITY_DISARMED then
-				setTextDevice(alarmZone.armingModeTextDevID, domoticz.SECURITY_DISARMED)
+				setTextDevice(domoticz, alarmZone.armingModeTextDevID, domoticz.SECURITY_DISARMED)
 			end
-			--alarmZone._updateZoneStatus(domoticz, ZS_NORMAL)
 		end
 
 		alarmZone.armZone =
@@ -244,7 +247,7 @@ local function initAlarmZones()
 				end
 				domoticz.log('Arming zone '..alarmZone.name..
 					' to '..armingMode..(delay>0 and ' with a delay of '..delay..' seconds' or ' immediately'), domoticz.LOG_INFO)
-				setTextDevice(alarmZone.armingModeTextDevID, armingMode, delay)
+				setTextDevice(domoticz, alarmZone.armingModeTextDevID, armingMode, delay)
 			end
 		end
 
