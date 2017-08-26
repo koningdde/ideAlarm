@@ -30,6 +30,11 @@ _C.NAG_INTERVAL_MINUTES = 6
 -- 0 = Disable automatic turning off alert devices.   
 _C.ALARM_ALERT_MAX_SECONDS = 15
 
+--	Uncomment 3 lines below to override the default logging level
+--	_C.loggingLevel = function(domoticz)
+--	return domoticz.LOG_INFO -- Select one of LOG_DEBUG, LOG_INFO, LOG_ERROR, LOG_FORCE to override system log level
+--	end
+
 _C.ALARM_ZONES = {
 	-- Start configuration of the first alarm zone
 	{
