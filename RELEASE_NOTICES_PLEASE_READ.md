@@ -3,6 +3,9 @@ Below are important instructions if you are upgrading ideAlarm from a previous v
 
 **PLEASE MAKE SURE THAT YOU GO THROUGH ALL STEPS BELOW WHERE IT SAYS "BREAKING CHANGE", DON'T SKIP ANY VERSION**
 
+***Coming changes in next version***
+- ideAlarm can override the dzvents default logging level by overriding it in the configuration file. See the [example configuration](https://github.com/allan-gam/ideAlarm/blob/master/modules/ideAlarmConfigExample.lua) file how that is done.
+
 ***Version 2.0.2***
 - Removed hard coding of local protocol, IP and port.
 
