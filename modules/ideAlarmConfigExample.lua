@@ -32,7 +32,7 @@ _C.ALARM_ALERT_MAX_SECONDS = 15
 
 --	Uncomment 3 lines below to override the default logging level
 --	_C.loggingLevel = function(domoticz)
---	return domoticz.LOG_INFO -- Select one of LOG_DEBUG, LOG_INFO, LOG_ERROR, LOG_FORCE to override system log level
+--		return domoticz.LOG_INFO -- Select one of LOG_DEBUG, LOG_INFO, LOG_ERROR, LOG_FORCE to override system log level
 --	end
 
 _C.ALARM_ZONES = {
