@@ -25,7 +25,7 @@ package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '2.0.2'
+local scriptVersion = '2.0.3'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -436,7 +436,12 @@ local function onSensorChange(domoticz, device)
 	for i, alarmZone in ipairs(alarmZones) do
 		for sensorName, sensorConfig in pairs(alarmZone.sensors) do
 			if sensorName == device.name then
-				local isEnabled = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled 
+				local isEnabled
+				if type(sensorConfig.enabled) == 'function' then
+					isEnabled = sensorConfig.enabled(domoticz)
+				else
+					isEnabled = sensorConfig.enabled
+				end
 				if isEnabled
 				and (alarmZone.armingMode(domoticz) == domoticz.SECURITY_ARMEDAWAY or
 						(alarmZone.armingMode(domoticz) == domoticz.SECURITY_ARMEDHOME and sensorConfig.class == SENSOR_CLASS_A)) then
@@ -647,7 +652,12 @@ function ideAlarm.statusAll(domoticz)
 		-- List all sensors for this zone
 		for sensorName, sensorConfig in pairs(alarmZone.sensors) do
 			local sensor = domoticz.devices(sensorName) 
-			local isEnabled = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled 
+			local isEnabled
+			if type(sensorConfig.enabled) == 'function' then
+				isEnabled = sensorConfig.enabled(domoticz)
+			else
+				isEnabled = sensorConfig.enabled
+			end
 			statusTxt = statusTxt..sensor.name
 				..(isEnabled and ': Enabled,' or ': Disabled,')
 				..((sensor.state == 'On' or sensor.state == 'Open') and ' Tripped' or ' Not tripped')..'\n'
@@ -696,6 +706,12 @@ end
 function ideAlarm.timerTriggers()
 	local nagTriggerInterval = config.NAG_SCRIPT_TRIGGER_INTERVAL or {'every minute'}
 	return nagTriggerInterval
+end
+
+--- Get the logging level if defined in config file.
+-- @return integer
+function ideAlarm.loggingLevel(domoticz)
+	return (config.loggingLevel ~= nil and config.loggingLevel(domoticz) or nil)
 end
 
 --- Get the nag interval
