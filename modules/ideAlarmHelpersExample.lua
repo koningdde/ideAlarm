@@ -80,16 +80,17 @@ _C.helpers = {
 	alarmArmingModeChanged = function(domoticz, alarmZone)
 		-- The arming mode for a zone has changed. We might want to be informed about that.
 		local zoneName = alarmZone.name
+		local armingMode = alarmZone.armingMode(domoticz)
 		domoticz.notify('Arming mode change',
-			'There new arming mode for ' .. alarmZone.name .. ' is ' .. alarmZone.armingMode,
+			'The new arming mode for ' .. zoneName .. ' is ' .. armingMode,
 			domoticz.PRIORITY_LOW)
-			-- Buy a Fibaro Wall Plug 2 and configure it to display red when off, green when on
-			-- You can then use it as in alarm arming mode indicator!
-			if alarmZone.armingMode(domoticz) == domoticz.SECURITY_DISARMED then 
-				domoticz.devices('Alarm Status Indicator').switchOff() -- Green light on
-			else
-				domoticz.devices('Alarm Status Indicator').switchOn() -- Red light on
-			end
+		-- Buy a Fibaro Wall Plug 2 and configure it to display red when off, green when on
+		-- You can then use it as in alarm arming mode indicator!
+		if armingMode == domoticz.SECURITY_DISARMED then 
+			domoticz.devices('Alarm Status Indicator').switchOff() -- Green light on
+		else
+			domoticz.devices('Alarm Status Indicator').switchOn() -- Red light on
+		end
 	end,
 
 	alarmNagOpenSensors = function(domoticz, alarmZone, nagSensors, lastValue)
