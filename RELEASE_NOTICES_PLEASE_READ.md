@@ -8,6 +8,8 @@ Below are important instructions if you are upgrading ideAlarm from a previous v
 
 - **BREAKING CHANGE**: Action is required if upgrading from a previous version. Move the 3 files ideAlarmConfig.lua, ideAlarmhelpers.lua, ideAlarmModule.lua from your **dzVents modules folder**, E.g.  /path/to/domoticz/scripts/dzVents/modules/ to your **dzVents script folder**, E.g.  /path/to/domoticz/scripts/dzVents/scripts/ After doing that, there shall be no ideAlarm related files left in the modules folder. If your modules folder is empty, it won't be needed any longer and you may delete it but be careful.
 
+- **BREAKING CHANGE**: Action is required if upgrading from a previous version. If you have made any custom lua scripts that's using the [ideAlarm API](https://github.com/allan-gam/ideAlarm/wiki/ideAlarm-API) you won't need to alter the package.path any longer before doing require "ideAlarmModule"
+
 - The 2 files ideAlarmConfig.lua, ideAlarmhelpers.lua have updated comment blocks (the leading few lines of comments in each file.) Have a look at the examples files at the first 7 lines what the comments now should look like. Make sure that the changes you make to your files only involves these comments.
 
 ***Version 2.0.2***
