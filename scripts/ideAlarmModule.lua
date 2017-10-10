@@ -20,12 +20,10 @@ Copyright (C) 2017  BakSeeDaa
 
 --]]
 
-package.path = globalvariables['script_path']..'modules/?.lua;'..package.path
---print(package.path)
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '2.0.3'
+local scriptVersion = '2.1.0'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -47,8 +45,7 @@ ideAlarm.SENSOR_CLASS_A = SENSOR_CLASS_A
 local SENSOR_CLASS_B = 'b' -- Sensor active in arming mode "Armed Away" only.
 ideAlarm.SENSOR_CLASS_B = SENSOR_CLASS_B
 
--- BELOW ARE 3 TEMPORARY FUNCTIONS THAT WILL BE OBSOLETE WHEN DZVENTS 2.3.0 IS RELEASED
--- Then the state change of a text device will trigger the Domoticz eventsystem
+-- BELOW ARE 2 TEMPORARY FUNCTIONS THAT WILL BE OBSOLETE WHEN/IF DZVENTS WILL SUPPORT afterSec(seconds) for text devices.
 local function jsonAPI(domoticz, apiCall, delay)
 	delay = delay or 0
 	local url = domoticz.settings['Domoticz url']..'/json.htm?'..apiCall
@@ -59,19 +56,14 @@ local function jsonAPI(domoticz, apiCall, delay)
 	end
 end
 
-local function urlEncode(str)
-	if (str) then
-		str = string.gsub (str, '\n', '\r\n')
-		str = string.gsub (str, '([^%w ])',
-		function (c) return string.format ('%%%02X', string.byte(c)) end)
-		str = string.gsub (str, ' ', '+')
-	end
-	return str
-end
-
+-- We need this function because there is no delay option for updateText!
 local function setTextDevice(domoticz, idx, sValue, delay)
 	delay = delay or 0
-	jsonAPI(domoticz, 'type=command&param=udevice&idx='..idx.."&nvalue=0&svalue="..urlEncode(sValue), delay)
+	if delay == 0 then
+		domoticz.devices(idx).updateText(sValue)
+	else
+		jsonAPI(domoticz, 'type=command&param=udevice&idx='..idx.."&nvalue=0&svalue="..domoticz.urlEncode(sValue), delay)
+	end
 end
 -- END TEMPORARY FUNCTIONS
 
@@ -152,7 +144,7 @@ local function initAlarmZones()
 			for sensorName, sensorConfig in pairs(alarmZone.sensors) do
 				local sensor = domoticz.devices(sensorName)
 				if ((mins > 0 and sensor.lastUpdate.minutesAgo <= mins)
-				or (mins == 0 and (sensor.state == 'Open' or sensor.state == 'On' or sensor.state == 'Unlocked'))) then
+				or (mins == 0 and sensor.active)) then
 					local includeSensor = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled
 					if includeSensor and isArming then includeSensor = sensorConfig.armWarn end
 					if includeSensor then
@@ -202,7 +194,7 @@ local function initAlarmZones()
 		-- @return Nil
 		function(domoticz)
 			if alarmZone.armingMode(domoticz) ~= domoticz.SECURITY_DISARMED then
-				setTextDevice(domoticz, alarmZone.armingModeTextDevID, domoticz.SECURITY_DISARMED)
+				domoticz.devices(alarmZone.armingModeTextDevID).updateText(domoticz.SECURITY_DISARMED)
 			end
 		end
 
@@ -330,9 +322,9 @@ local function toggleSirens(domoticz, device, alertingZones)
 	for alertDevice, newState in pairs(allAlertDevices) do
 		if (domoticz.devices(alertDevice) ~= nil)
 		and domoticz.devices(alertDevice).state ~= newState then
-			domoticz.devices(alertDevice).toggleSwitch()
+			domoticz.devices(alertDevice).toggleSwitch().silent()
 			if newState == 'On' and config.ALARM_ALERT_MAX_SECONDS > 0 then
-				domoticz.devices(alertDevice).switchOff().afterSec(config.ALARM_ALERT_MAX_SECONDS)
+				domoticz.devices(alertDevice).switchOff().afterSec(config.ALARM_ALERT_MAX_SECONDS).silent()
 			end
 		end
 	end
@@ -341,7 +333,7 @@ end
 local function onToggleButton(domoticz, device)
 	-- Checking if the toggle buttons have been pressed
 	for _, alarmZone in ipairs(alarmZones) do
-		if device.state == 'On' and (device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn) then
+		if device.active and (device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn) then
 			local armType
 			if device.name == alarmZone.armAwayToggleBtn then
 				armType = domoticz.SECURITY_ARMEDAWAY
@@ -500,7 +492,7 @@ local function countOpenSensors(domoticz)
 			local sensor = domoticz.devices(sensorName)
 			if sensor then
 				local includeSensor = (type(sensorConfig.enabled) == 'function') and sensorConfig.enabled(domoticz) or sensorConfig.enabled
-				if includeSensor and sensorConfig.nag and (sensor.state == 'On' or sensor.state == 'Open') then
+				if includeSensor and sensorConfig.nag and sensor.active then
 					openSensorCount = openSensorCount + 1
 				end
 			end
@@ -546,7 +538,7 @@ local function nagCheck(domoticz, device, triggerInfo)
 				end
 				local minutesAgo = sensor.lastUpdate.minutesAgo
 				if includeSensor and sensorConfig.nag
-				and (sensor.state == 'On' or sensor.state == 'Open')
+				and sensor.active
 				and minutesAgo >= sensorConfig.nagTimeoutMins then
 					-- This sensor is worth nagging about
 					table.insert(nagSensors, sensor)
@@ -594,8 +586,7 @@ function ideAlarm.execute(domoticz, device, triggerInfo)
 					triggerType = 'armingMode' -- Alarm Zone Arming Mode change
 					break
 				end
-			elseif (device.state == 'Open' or device.state == 'On')
-			and (device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn) then
+			elseif device.active and (device.name == alarmZone.armAwayToggleBtn or device.name == alarmZone.armHomeToggleBtn) then
 				triggerType = 'toggleSwitch'
 				break
 			end
@@ -619,7 +610,8 @@ function ideAlarm.execute(domoticz, device, triggerInfo)
 		onArmingModeChange(domoticz, device)
 		return
 	elseif triggerType == 'sensor' then
-		if device.state == 'Open' or device.state == 'On' then
+		device.active = device.switchType ~= 'Door Lock' and device.active or device.state == 'Unlocked' and true or false -- Ugly hack!
+		if device.active then
 			onSensorChange(domoticz, device) -- Only Open or On states are of interest
 		else
 			nagCheck(domoticz, device) -- Only Closed or Off states are of interest
@@ -660,7 +652,7 @@ function ideAlarm.statusAll(domoticz)
 			end
 			statusTxt = statusTxt..sensor.name
 				..(isEnabled and ': Enabled,' or ': Disabled,')
-				..((sensor.state == 'On' or sensor.state == 'Open') and ' Tripped' or ' Not tripped')..'\n'
+				..(sensor.active and ' Tripped' or ' Not tripped')..'\n'
 		end
 		statusTxt = statusTxt..'\n'
 	end
@@ -688,8 +680,8 @@ function ideAlarm.testAlert(domoticz)
 
 	for alertDevice, _ in pairs(allAlertDevices) do
 		domoticz.log(alertDevice, domoticz.LOG_FORCE)
-		domoticz.devices(alertDevice).switchOn()
-		domoticz.devices(alertDevice).switchOff().afterSec(5)
+		domoticz.devices(alertDevice).switchOn().silent()
+		domoticz.devices(alertDevice).switchOff().afterSec(5).silent()
 	end
 
 	return true
