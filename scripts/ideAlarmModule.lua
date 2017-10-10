@@ -23,7 +23,7 @@ Copyright (C) 2017  BakSeeDaa
 local config = require "ideAlarmConfig"
 local custom = require "ideAlarmHelpers"
 
-local scriptVersion = '2.1.0'
+local scriptVersion = '2.1.1'
 local ideAlarm = {}
 
 -- Possible Zone statuses
@@ -39,6 +39,8 @@ local ZS_TRIPPED = 'Tripped'
 ideAlarm.TRIPPED = ZS_TRIPPED
 local ZS_TIMED_OUT = 'Timed out'
 ideAlarm.ZS_TIMED_OUT = ZS_TIMED_OUT
+
+local SECURITY_PANEL_NAME = config.SECURITY_PANEL_NAME or 'Security Panel' 
 
 local SENSOR_CLASS_A = 'a' -- Sensor active in both arming modes. E.g. "Armed Home" and "Armed Away".
 ideAlarm.SENSOR_CLASS_A = SENSOR_CLASS_A
@@ -408,11 +410,11 @@ local function onArmingModeChange(domoticz, device)
 				if armingMode ~= domoticz.security then
 					domoticz.log('Syncing Domoticz\'s built in Security Panel with the zone '..alarmZone.name..'\'s arming status', domoticz.LOG_INFO)
 					if armingMode == domoticz.SECURITY_DISARMED then
-						domoticz.devices('Security Panel').disarm()
+						domoticz.devices(SECURITY_PANEL_NAME).disarm()
 					elseif armingMode == domoticz.SECURITY_ARMEDHOME then
-						domoticz.devices('Security Panel').armHome()
+						domoticz.devices(SECURITY_PANEL_NAME).armHome()
 					elseif armingMode == domoticz.SECURITY_ARMEDAWAY then
-						domoticz.devices('Security Panel').armAway()
+						domoticz.devices(SECURITY_PANEL_NAME).armAway()
 					end
 				end
 			end
