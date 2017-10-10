@@ -34,6 +34,9 @@ _C.ALARM_ALERT_MAX_SECONDS = 15
 --		return domoticz.LOG_INFO -- Select one of LOG_DEBUG, LOG_INFO, LOG_ERROR, LOG_FORCE to override system log level
 --	end
 
+--	If You named your Domoticz Security Panel different from "Security Panel", uncomment the line below to specify the name.
+-- _C.SECURITY_PANEL_NAME = 'Security Panel Fancy Name'
+
 _C.ALARM_ZONES = {
 	-- Start configuration of the first alarm zone
 	{
