@@ -4,9 +4,9 @@ Below are important instructions if you are upgrading ideAlarm from a previous v
 **PLEASE MAKE SURE THAT YOU GO THROUGH ALL STEPS BELOW WHERE IT SAYS "BREAKING CHANGE", DON'T SKIP ANY VERSION**
 
 ***Version 2.1.0***
-- **BREAKING CHANGE** dzVents version 2.3.0 or higher is now required.
+- **BREAKING CHANGE**: dzVents version 2.3.0 or higher is now required.
 
-- **BREAKING CHANGE** Action is required if upgrading from a previous version. Move the 3 files ideAlarmConfig.lua, ideAlarmhelpers.lua, ideAlarmModule.lua from your **dzVents modules folder**, E.g.  /path/to/domoticz/scripts/dzVents/modules/ to your **dzVents script folder**, E.g.  /path/to/domoticz/scripts/dzVents/scripts/ After doing that, there shall be no ideAlarm related files left in the modules folder. If your modules folder is empty, it won't be needed any longer and you may delete it but be careful.
+- **BREAKING CHANGE**: Action is required if upgrading from a previous version. Move the 3 files ideAlarmConfig.lua, ideAlarmhelpers.lua, ideAlarmModule.lua from your **dzVents modules folder**, E.g.  /path/to/domoticz/scripts/dzVents/modules/ to your **dzVents script folder**, E.g.  /path/to/domoticz/scripts/dzVents/scripts/ After doing that, there shall be no ideAlarm related files left in the modules folder. If your modules folder is empty, it won't be needed any longer and you may delete it but be careful.
 
 - The 2 files ideAlarmConfig.lua, ideAlarmhelpers.lua have updated comment blocks (the leading few lines of comments in each file.) Have a look at the examples files at the first 7 lines what the comments now should look like. Make sure that the changes you make to your files only involves these comments.
 
