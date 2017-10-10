@@ -4,7 +4,7 @@ Below are important instructions if you are upgrading ideAlarm from a previous v
 **PLEASE MAKE SURE THAT YOU GO THROUGH ALL STEPS BELOW WHERE IT SAYS "BREAKING CHANGE", DON'T SKIP ANY VERSION**
 
 ***Version 2.1.1***
-- Added support for naming the Domoticz Security Panel differently than "Security Panel". If you wish to use this capability, have a look at the (example configuration file)[https://github.com/allan-gam/ideAlarm/blob/master/examples/ideAlarmConfig.lua] (Look for SECURITY_PANEL_NAME) and insert that line into your own configuration file. If you intend to use the default name "Security Panel", you don't need to do anything.
+- Added support for naming the Domoticz Security Panel differently than "Security Panel". If you wish to use this capability, have a look at the [example configuration file]([https://github.com/allan-gam/ideAlarm/blob/master/examples/ideAlarmConfig.lua) (Look for SECURITY_PANEL_NAME) and insert that line into your own configuration file. If you intend to use the default name "Security Panel", you don't need to do anything.
 
 ***Version 2.1.0***
 - **BREAKING CHANGE**: dzVents version 2.3.0 or higher is now required.
