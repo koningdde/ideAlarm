@@ -1,8 +1,10 @@
--- Edit this file suit your needs 
--- Place this file in the dzVents scripts folder using the name ideAlarmHelpers.lua
+--[[
+Edit this file suit your needs 
+ Place this file in the dzVents scripts folder using the name ideAlarmHelpers.lua
 
--- See https://github.com/allan-gam/ideAlarm/wiki/configuration
--- After editing, always verify that it's valid LUA at http://codepad.org/ (Mark your paste as "Private"!!!)
+See https://github.com/allan-gam/ideAlarm/wiki/Event-Helpers
+After editing, always verify that it's valid LUA at http://codepad.org/ (Mark your paste as "Private"!!!)
+--]]
 
 local _C = {}
 
