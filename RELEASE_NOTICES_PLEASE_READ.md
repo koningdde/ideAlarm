@@ -3,8 +3,12 @@ Below are important instructions if you are upgrading ideAlarm from a previous v
 
 **PLEASE MAKE SURE THAT YOU GO THROUGH ALL STEPS BELOW WHERE IT SAYS "BREAKING CHANGE", DON'T SKIP ANY VERSION**
 
-***Coming changes in next version***
-- ideAlarm can override the dzvents default logging level by overriding it in the configuration file. See the [example configuration](https://github.com/allan-gam/ideAlarm/blob/master/modules/ideAlarmConfigExample.lua) file how that is done.
+***Version 2.1.0***
+- **BREAKING CHANGES** Action is required if upgrading from a previous version.
+
+- Move the 3 files ideAlarmConfig.lua, ideAlarmhelpers.lua, ideAlarmModule.lua from your **dzVents modules folder**, E.g.  /path/to/domoticz/scripts/dzVents/modules/ to your **dzVents script folder**, E.g.  /path/to/domoticz/scripts/dzVents/scripts/ After doing that, there shall be no ideAlarm related files left in the modules folder. If your modules folder is empty, it won't be needed any longer and you may delete it but be careful.
+
+-- Additional actions will be added here. Please wait.
 
 ***Version 2.0.2***
 - Removed hard coding of local protocol, IP and port.
